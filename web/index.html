@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>flush reload example</title>
+  </head>
+  <body>
+    <script type="module">
+      import init, { flush_reload } from "./pkg/flush_reload_web.js";
+      init().then(() => {
+        flush_reload("WebAssembly");
+      });
+    </script>
+  </body>
+</html>

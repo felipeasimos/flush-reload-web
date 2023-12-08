@@ -1,0 +1,7 @@
+**/fr
+**/threshold_finder
+**/target/
+**/parse
+gpg/
+data/
+!gpg/setup-gpg.sh
