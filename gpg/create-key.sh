@@ -21,5 +21,5 @@ export GPG="$GPG -r testdev"
 # create dummy file
 echo 'Hello World! How are you doing?' > hello.txt
 # encrypt it
-${GPG} -e hello.txt
+${GPG} --yes -e hello.txt
 export TARGET_FILE=$(pwd)/hello.txt.gpg

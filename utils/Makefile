@@ -8,6 +8,7 @@ build-reducer:
 parse:
 	./parse $(CURDIR)/../data/report.plot $(CURDIR)/../data/parsed.bin
 compare:
+	python3 pgpdump.py
 	python3 compare.py
 plot:
 	gnuplot plot.plot
