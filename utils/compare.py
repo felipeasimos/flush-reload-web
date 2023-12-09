@@ -83,8 +83,7 @@ def main():
     print("levensthein with dq:", levensthein(parsed[:half], dp))
     print("dumb check with dp:", dumb_check(parsed[half:], dp))
     print("dumb check with dq:", dumb_check(parsed[:half], dp))
-
-
+    print("undefined bonus:", parsed.count('_')/(2*len(parsed)))
 
 if __name__ == "__main__":
     main()
