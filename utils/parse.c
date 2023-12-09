@@ -99,7 +99,7 @@ int parse_plunger_square_reduce_mul(Parser* p) {
   }
   if((!p->now[S] && !p->now[R] && !p->now[M]) || (p->now[R] && !p->now[S] && !p->now[M])) {
     p->state = Null;
-    return -1;
+    return 1;
   }
   return -1;
 }
