@@ -1,6 +1,6 @@
 .PHONY: build-native run-attack build-finder build-attack
 build-attack:
-	gcc src/fr.c src/config.c -O2 -o fr
+	gcc src/fr.c src/config.c -DWITHOUT_TIMING=1 -O2 -o fr
 build-finder:
 	gcc src/threshold_finder.c -O2 -o threshold_finder
 build-native: build-finder build-attack

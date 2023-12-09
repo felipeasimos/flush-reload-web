@@ -1,5 +1,5 @@
 threshold 160
-wait_cycles 1
+wait_cycles 0
 time_slots 80000
 target_file ../gpg/gnupg-1.4.13/g10/gpg
 probe 0x9d960

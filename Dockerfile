@@ -12,11 +12,9 @@ ENV GPG "/app/gpg/gnupg-1.4.13/g10/gpg -r testdev --homedir ${GPGHOMEDIR}"
 ADD . /app
 # create dummy file
 RUN echo 'Hello World! How are you doing?' > hello.txt
-# # encrypt it
+# encrypt it
 RUN ${GPG} -e hello.txt
 ENV TARGET_FILE /app/gpg/hello.txt.gpg
-CMD bash -c "make attack build-bento parse compare; bash"
 WORKDIR /app
-ADD . /app
 EXPOSE 8000
-CMD bash -c "make attack && bash"
+CMD bash -c "make attack build-plunger parse compare; bash"

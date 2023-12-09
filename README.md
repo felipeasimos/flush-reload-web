@@ -37,6 +37,58 @@ If any of the two processes write to the page, a memory deduplication happen, an
 
 In the browser we don't have control over low-level instruction like `clflush` to get rid of a memory line in all levels of cache. To do this in the browser we have to generate and access eviction sets to load the cache with specific memory lines until the target is evicted.
 
+##### Conflict Sets
+
+There are also "conflict sets". Which are the union of the eviction sets of target addresses.
+Just joining the eviction sets may not be optimal, since two or more target addresses may live in the same memory line.
+
+* To reduce the conflict set we can test((S \ {x}) U {y}) to see if {x} still evicts. If it does, x and y live in the same cache line.
+    * this means we can remove the entire eviction set of one of them and one address from the other (since our targets also evict themselves)
+
+An important details about eviction sets is that the candidates should be accessed by a linked list. This avoids data pretching, that tries to optimize access to sequencial memory data (as it would in an array).
+
+##### Eviction Set Algorithms
+
+The algorithms try to reduce a set that can guarantee to evict the target but its too large (not efficient).
+
+The algorithms test if the current eviction set can evict the target address. So threshold calibration (or fixed setting) must be done beforehand.
+
+All algorithms start with a candidate set. Each candidate set element should potentially live in a different memory line. In practice this means that we would allocate an array and add elements that are <cache line> away from each other to the candidate set.
+
+Caches that follow a permutation-based replacement policy have a fixed minimal number of addresses that need to be loaded before we can guarantee that a target address is evicted. This number will be called `a`.
+
+The algorithms below were described in "Theory and Practice of Finding Eviction Sets":
+
+###### Naive Reduction Approach (N²)
+
+```
+S = candidate set, x = victim address
+R = {} // minimal eviction set
+while |R| < a do
+    c <- pick(S) // get a random candidate
+    if !is_valid_eviction_set(R + (S without c), x) then // check if it fails to evict x
+        R <- R + {c} // add candidate to solution set
+    end if
+    S <- S \ {c} // remove candidate from candidate set
+end while
+return R
+```
+
+###### Reduction via Group Testing
+
+```
+S = candidate set, x = victim address
+while |S| > a do
+    {T[1], ..., T[a+1]} <- split(S, a + 1) // get a + 1 elements from S (without removing)
+    i <- 1
+    while !is_valid_eviction_set(S \ Ti, x) do
+        i <- i + 1
+    end while
+    S <- S \ Ti
+end while
+return S
+```
+
 #### Native Code Caveats
 
 `__attribute__((always inline))` - inline function even if no optimizations are enabled. Using this with function that use inline asm make sure we can easily inject the same sequence of instructions whenever we want.

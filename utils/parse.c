@@ -52,7 +52,7 @@ int next(Parser* p, FILE* src) {
 int parse_plunger_nul(Parser* p) {
   if(p->now[M]) return -2;
   if(!p->now[S] && !p->now[R] && !p->now[M]) return -1;
-  if(p->now[S] || !p->now[M]) {
+  if(p->now[S] && !p->now[M]) { // CHECK
     p->state = Square;
     return -1;
   }
@@ -73,7 +73,7 @@ int parse_plunger_square(Parser* p) {
 }
 
 int parse_plunger_square_reduce(Parser* p) {
-  if(p->now[S] && !p->now[M]) {
+  if(p->now[S] && p->now[M]) {
     p->state = Null;
     return -2;
   }
@@ -146,7 +146,7 @@ int parse_bento_square(Parser* p) {
     return 1;
   }
   // below left
-  if(p->now[R] && (!p->now[M] || p->now[S] || !p->last[S])) {
+  if(p->now[R] && (!p->now[M] || p->now[S] || !p->last[S])) { // CHECK
     p->state = Null;
     return 0;
   }
@@ -176,6 +176,11 @@ int parse_bento_square_reduce(Parser* p) {
   if(!(p->now[M] && !p->last[M]) && ((!p->now[S] && !p->now[M] && !p->now[R]) || (p->now[S] && !(p->last[S] && !p->last[R] && p->now[R]) && !p->now[R]) )) {
     p->state = Square;
     return -1;
+  }
+  // below below left
+  if(p->now[M] && !p->last[M] && !(p->now[S] && !p->last[S])) {
+    p->state = Null;
+    return 1;
   }
   return -1;
 }

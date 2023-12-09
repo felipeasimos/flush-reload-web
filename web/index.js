@@ -3,11 +3,22 @@ async function getTargetArrayBuffer() {
   return response.arrayBuffer()
 }
 
+function generate_eviction_set(offset, candidate_set) {
+  // naive eviction set generation
+}
+
+function generate_conflict_set(offset, targets, eviction_sets) {
+  // 1. generate naive conflict set by joining all eviction sets
+  // 2. reduce conflict set
+}
+
+function get_time() {
+}
+
 window.onload = async () => {
   const target = await getTargetArrayBuffer();
 
-  // GET TIME
-  // 1. clock (shared array buffer)
+  // CLOCK
 
   // EVICT
   // 1. go through evict sets

@@ -7,7 +7,7 @@
 #include "fr.h"
 #include "config.h"
 
-#define WITH_TIMING 1
+// #define WITHOUT_TIMING 1
 
 #define wait(cycles) for(volatile uint64_t _i = 0; _i < cycles; _i++)
 
@@ -29,10 +29,10 @@ void spy(void** addrs, uint32_t num_addrs, uint16_t* results, uint32_t num_resul
   uint32_t total_num_results = num_results * num_addrs;
   for(uint32_t slot_idx = 0; slot_idx < total_num_results; slot_idx+=3) {
     for(uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
-#if defined(WITH_TIMING)
-      results[slot_idx + addr_idx] = probe_with_timing(addrs[addr_idx]); 
-#else
+#if defined(WITHOUT_TIMING)
       results[slot_idx + addr_idx] = probe_bool(addrs[addr_idx], threshold); 
+#else
+      results[slot_idx + addr_idx] = probe_with_timing(addrs[addr_idx]); 
 #endif
     }
     wait(wait_cycles);
