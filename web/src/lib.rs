@@ -38,6 +38,7 @@ pub fn flush_reload(p: *const u8) {
     //      * train to detect misses and hits (train)
     // * attack loop:
     // 1. evict (using target-specific 'evict' function) (done for native)
+    return;
     for _ in 1..1000 {
         evict(p);
         // 2. wait (do some fast constant time operation)

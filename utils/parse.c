@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define REDUCER 1
+// #define REDUCER 1
 // #define BENTO 1
 // #define PLUNGER 1
 
@@ -110,6 +110,7 @@ int parse_plunger_square_reduce_exp(Parser* p) {
     return -1;
   }
   if(!p->now[S] && !p->now[R] && !p->now[M]) return -1;
+  return -1;
 }
 #endif
 

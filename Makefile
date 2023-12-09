@@ -3,6 +3,8 @@ build-docker:
 	docker build -t fr .
 run-docker-native: build-docker
 	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr
+serve:
+	$(MAKE) -C web serve
 plot:
 	$(MAKE) -C utils plot
 attack:

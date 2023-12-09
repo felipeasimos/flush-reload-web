@@ -7,7 +7,7 @@
 #include "fr.h"
 #include "config.h"
 
-// #define WITH_TIMING 1
+#define WITH_TIMING 1
 
 #define wait(cycles) for(volatile uint64_t _i = 0; _i < cycles; _i++)
 

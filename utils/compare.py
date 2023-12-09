@@ -42,13 +42,13 @@ def levensthein(list1, list2):
     return matrix[len(list1)][len(list2)]
 
 
-def dumb_check(s1, s2):
-    length = min(len(s1), len(s2))
+def dumb_check(guess, answer):
+    length = min(len(guess), len(answer))
     count = 0
     for i in range(length):
-        if s1[i] == s2[i]:
+        if guess[i] == answer[i]:
             count += 1
-    return count
+    return count, count/len(answer)
 
 
 def main():

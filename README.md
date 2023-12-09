@@ -2,7 +2,7 @@
 
 ## How to Run
 
-There are 3 ways to execute the attack: on the web with javascript, on the web with webassembly and natively.
+Ultimately there will be 3 ways to execute the attack: on the web with javascript, on the web with webassembly and natively.
 
 To run the attack from docker:
 * run native attack: `make run-docker-native`
