@@ -10,6 +10,7 @@ typedef struct Config {
   uint64_t wait_cycles;
   uint64_t threshold;
   uint64_t time_slots;
+  uint64_t time_slot_size;
   size_t num_addrs;
 
   struct stat file_stat;

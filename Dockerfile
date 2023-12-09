@@ -2,7 +2,7 @@ from debian:bookworm
 
 # install and build requirements
 RUN apt update
-RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 python3-venv
+RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim
 # setup gpg key
 WORKDIR /app/gpg/
 ADD ./gpg/setup-gpg.sh /app/gpg/setup-gpg.sh
@@ -16,4 +16,4 @@ ENV TARGET_FILE /app/gpg/hello.txt.gpg
 ADD . /app
 WORKDIR /app
 EXPOSE 8000
-CMD bash -c "make attack build-plunger parse compare; bash"
+CMD bash -c "make attack build-bento parse compare; bash"

@@ -5,6 +5,8 @@ run-docker-native: build-docker
 	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr
 serve:
 	$(MAKE) -C web serve
+objdump:
+	$(MAKE) -C gpg objdump
 create-key:
 	$(MAKE) -C gpg create-key
 setup-gpg:

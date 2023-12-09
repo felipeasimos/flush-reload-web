@@ -11,31 +11,30 @@
 
 #define wait(cycles) for(volatile uint64_t _i = 0; _i < cycles; _i++)
 
-static inline __attribute__((always_inline)) uint64_t probe_with_timing(uint8_t* p) {
+static inline __attribute__((always_inline)) uint64_t probe(uint8_t* p) {
   volatile uint64_t t = load_time(p);
   clflush(p);
   fence();
   return t;
 }
 
-static inline __attribute__((always_inline)) uint64_t probe_bool(uint8_t* p, uint64_t threshold) {
-  volatile uint64_t t = load_time(p);
-  clflush(p);
-  fence();
-  return t < threshold;
-}
-
-void spy(void** addrs, uint32_t num_addrs, uint16_t* results, uint32_t num_results, uint64_t wait_cycles, uint64_t threshold) {
+void spy(void** addrs, uint32_t num_addrs, uint16_t* results, uint32_t num_results, uint64_t wait_cycles, uint64_t time_slot_size, uint64_t threshold) {
   uint32_t total_num_results = num_results * num_addrs;
   for(uint32_t slot_idx = 0; slot_idx < total_num_results; slot_idx+=3) {
+#if !defined(WITHOUT_TIMING)
     for(uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
-#if defined(WITHOUT_TIMING)
-      results[slot_idx + addr_idx] = probe_bool(addrs[addr_idx], threshold); 
-#else
-      results[slot_idx + addr_idx] = probe_with_timing(addrs[addr_idx]); 
-#endif
+      results[slot_idx + addr_idx] = probe(addrs[addr_idx]); 
     }
     wait(wait_cycles);
+#else
+    uint64_t start_time = rdtscp();
+    for(uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
+      results[slot_idx + addr_idx] |= probe(addrs[addr_idx]) < threshold; 
+    }
+    do {
+      wait(wait_cycles);
+    } while(rdtscp() - start_time < time_slot_size);
+#endif
   }
 }
 
@@ -47,17 +46,19 @@ int main(int argc, char** argv) {
   memcpy(addrs, config.addrs, config.num_addrs * sizeof(unsigned long*));
   uint32_t total_results = config.num_addrs * config.time_slots;
   uint16_t results[total_results];
+  memset(results, 0x00, total_results * sizeof(uint16_t));
 
-  printf("threshold: %lu\n", config.threshold);
-  printf("wait_cycles: %lu\n", config.wait_cycles);
-  printf("time_slots: %lu\n", config.time_slots);
   printf("num_addrs: %lu\n", config.num_addrs);
   printf("mmap_base: %p\n", config.mmap_base);
+  printf("time_slots: %lu\n", config.time_slots);
+  printf("wait_cycles: %lu\n", config.wait_cycles);
+  printf("time slot size: %lu\n", config.time_slot_size);
+  printf("threshold: %lu\n", config.threshold);
   for(uint32_t i = 0; i < config.num_addrs; i++) {
     printf("\taddr[%u] = %p\n", i, config.addrs[i]);
   }
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
-  spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles, config.threshold);
+  spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles, config.time_slot_size, config.threshold);
   fprintf(stderr, "\t|||   ...closed spy...   |||\n");
 
   FILE* report = NULL;

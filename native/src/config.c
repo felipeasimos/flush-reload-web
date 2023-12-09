@@ -47,6 +47,7 @@ int parse_config(int argc, char** argv, Config* config) {
     PARSE(wait_cycles, "%lu", (unsigned long*));
     PARSE(threshold, "%lu", (unsigned long*));
     PARSE(time_slots, "%lu", (unsigned long*));
+    PARSE(time_slot_size, "%lu", (unsigned long*));
     if( CHECK_IF_FIELD("probe") ) {
       config->addrs = realloc(config->addrs, (++config->num_addrs) * sizeof(void*));
       SSCANF(addrs[config->num_addrs-1], "%lX", (unsigned long*));
