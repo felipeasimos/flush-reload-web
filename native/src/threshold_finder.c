@@ -5,6 +5,7 @@
 
 #define TRAIN_ITERATIONS 1000000
 #define MMAP_SIZE 4096
+#define CAP 200
 
 typedef struct fr_stats {
   uint64_t avg;
@@ -15,6 +16,7 @@ typedef struct fr_stats {
 #define GET_TRAIN_STATS(p, func, stats)\
   for(uint64_t i = 0; i < TRAIN_ITERATIONS; i++) {\
     uint64_t t = func(p);\
+    if(t > CAP) t = CAP;\
     if(t < stats->min) stats->min = t;\
     if(t > stats->max) stats->max = t;\
     stats->avg += t;\
@@ -51,6 +53,7 @@ uint64_t get_threshold(uint8_t quiet) {
   if(!quiet) {
     printf("fast - avg: %lu, min: %lu, max: %lu\n", fast.avg, fast.min, fast.max);
     printf("slow - avg: %lu, min: %lu, max: %lu\n", slow.avg, slow.min, slow.max);
+    printf("avg fast.max and slow.min: %lu\n", (fast.max + slow.min)/2);
   }
   munmap(memory, MMAP_SIZE);
   uint64_t avg = (fast.avg + slow.avg) / 2;

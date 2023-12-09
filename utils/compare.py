@@ -11,7 +11,9 @@ def LCS(s1, s2):
                     x_longest = x
             else:
                 m[x][y] = 0
-    return s1[x_longest - longest: x_longest], x_longest - longest
+    longest_subsequence = s1[x_longest - longest: x_longest]
+    second_place_diff = x_longest - longest
+    return len(longest_subsequence), longest_subsequence, second_place_diff
 
 
 def levensthein(list1, list2):

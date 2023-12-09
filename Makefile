@@ -5,10 +5,16 @@ run-docker-native: build-docker
 	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr
 serve:
 	$(MAKE) -C web serve
+create-key:
+	$(MAKE) -C gpg create-key
+setup-gpg:
+	$(MAKE) -C gpg setup-gpg
 plot:
 	$(MAKE) -C utils plot
 attack:
 	$(MAKE) -C native attack
+probe:
+	$(MAKE) -C native probe
 compare:
 	$(MAKE) -C utils compare
 parse:
