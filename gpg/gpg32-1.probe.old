@@ -1,8 +1,8 @@
 threshold 120
 wait_cycles 0
 time_slots 35000
-time_slot_size 2000
+time_slot_size 2500
 target_file ../gpg/gnupg-1.4.13/g10/gpg
-probe 0x9c681
-probe 0x9b597
-probe 0x9c182
+probe 0x9d960
+probe 0x9cea8
+probe 0x9d3e3

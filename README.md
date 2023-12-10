@@ -33,6 +33,26 @@ By evicting a specific memory line in an attacker's shared page we also evict th
 
 If any of the two processes write to the page, a memory deduplication happen, and they no longer share the same physical address (a copy is made).
 
+#### Probe addresses
+
+The addresses should be pertinent to and only to the Square, Reduce and Multiply operations. Of course, that may be a hard guarantee to enforce, but we need to try as much as we can. Running `make objdump` inside the docker container will show us the dissambled gpg alongside the source.
+
+Although the first cache line of the functions associated with these operations may look like a perfect place, it will also be executed when speculative execution is done.
+
+Ideally the address is part of a loop. Which would give the operation more chances to be detected.
+
+##### Square
+
+Should be inside the `mpih_sqr_n`. A good offset found was `0x9d9c4`, since it takes the end of an if statement and the beginning of an else.
+
+##### Reduce
+
+Should be inside the `mpihelp_divrem`. `0x9cea9` is a loop in the default case of the function's switch statement.
+
+##### Multiply
+
+Should be inside `mul_n`. `0x9d447` takes the end of an if and the beginning of an else.
+
 #### Eviction Sets
 
 In the browser we don't have control over low-level instruction like `clflush` to get rid of a memory line in all levels of cache. To do this in the browser we have to generate and access eviction sets to load the cache with specific memory lines until the target is evicted.

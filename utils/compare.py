@@ -41,16 +41,7 @@ def levensthein(list1, list2):
                     matrix[x][y - 1] + 1
                 )
 
-    return matrix[len(list1)][len(list2)]
-
-
-def dumb_check(guess, answer):
-    length = min(len(guess), len(answer))
-    count = 0
-    for i in range(length):
-        if guess[i] == answer[i]:
-            count += 1
-    return count, count/len(answer)
+    return matrix[len(list1)][len(list2)], matrix[len(list1)][len(list2)]/len(list2)
 
 
 def main():
@@ -70,20 +61,16 @@ def main():
     d = int(symbols['d'], 2)
     p = int(symbols['p'], 2)
     q = int(symbols['q'], 2)
-    dp = "{0:{size}b}".format(d % (p-1), size=1024)
-    dq = "{0:{size}b}".format(d % (q-1), size=1024)
+    dp = "{0:{size}b}".format(d % (p-1), size=1024).strip()
+    dq = "{0:{size}b}".format(d % (q-1), size=1024).strip()
     print("levensthein:", levensthein(parsed, dp + dq))
     print("LCS:", LCS(parsed, dp + dq))
-    print("dumb check:", dumb_check(parsed, dp + dq))
 
     half = (len(parsed)//2)
     print("LCS with dp:", LCS(parsed[half:], dp))
     print("LCS with dq:", LCS(parsed[:half], dp))
     print("levensthein with dp:", levensthein(parsed[half:], dp))
     print("levensthein with dq:", levensthein(parsed[:half], dp))
-    print("dumb check with dp:", dumb_check(parsed[half:], dp))
-    print("dumb check with dq:", dumb_check(parsed[:half], dp))
-    print("undefined bonus:", parsed.count('_')/(2*len(parsed)))
 
 if __name__ == "__main__":
     main()
