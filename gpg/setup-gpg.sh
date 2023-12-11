@@ -18,5 +18,6 @@ cd ..
 # create homedir
 export GPGHOMEDIR=$(pwd)/gpgtesthomedir
 mkdir --mode 700 ${GPGHOMEDIR}
-export GPG="$(pwd)/gnupg-1.4.13/g10/gpg --homedir $(pwd)/gpgtesthomedir"
-
+export GPG="$(pwd)/gnupg-1.4.13/g10/gpg --homedir ${GPGHOMEDIR}"
+mkdir -p ../data/
+cp $(pwd)/gnupg-1.4.13/g10/gpg ../data/

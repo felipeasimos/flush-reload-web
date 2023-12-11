@@ -75,7 +75,7 @@ The algorithms test if the current eviction set can evict the target address. So
 
 All algorithms start with a candidate set. Each candidate set element should potentially live in a different memory line. In practice this means that we would allocate an array and add elements that are <cache line> away from each other to the candidate set.
 
-Caches that follow a permutation-based replacement policy have a fixed minimal number of addresses that need to be loaded before we can guarantee that a target address is evicted. This number will be called `a`.
+Caches that follow a permutation-based replacement policy have a fixed minimal number of addresses that need to be loaded before we can guarantee that a target address is evicted. This number will be called `a` (the number of ways, the associativity).
 
 The algorithms below were described in "Theory and Practice of Finding Eviction Sets":
 

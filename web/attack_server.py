@@ -13,6 +13,8 @@ class MyServer(BaseHTTPRequestHandler):
         filepath = Path("." + self.path)
         if self.path == "/target_file":
             filepath = Path("../data/gpg")
+        elif self.path == "/config":
+            filepath = Path("../gpg/gpg.probe")
         elif self.path == "/" or self.path == "":
             filepath = Path("./index.html")
         elif self.path == "/probe":
@@ -22,8 +24,10 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_response(200)
             mimetype = mimetypes.guess_type(filepath)
             self.send_header("Content-type", mimetype[0])
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+            self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
             self.end_headers()
-            self.send_file(filepath, mimetype)
+            self.send_file(filepath)
             return
         else:
             self.send_response(404)
@@ -40,7 +44,7 @@ class MyServer(BaseHTTPRequestHandler):
         #     return "text/javascript"
         # return "text/{}".format(filepath.suffix[1:])
 
-    def send_file(self, filepath, mimetype):
+    def send_file(self, filepath):
         with open(filepath, "rb") as f:
             self.wfile.write(f.read())
 
