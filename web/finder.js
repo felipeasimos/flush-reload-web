@@ -5,5 +5,3 @@ self.addEventListener("message", (event) => {
     sab[0]++;
   }
 });
-
-self.addEvent

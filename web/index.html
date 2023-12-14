@@ -5,13 +5,13 @@
     <title>flush reload example</title>
   </head>
   <body>
-    Hello?
-    <script type="module" src="index.js" />
+    <script src="index.js" />
     <script type="module">
       import init, { flush_reload } from "./pkg/flush_reload.js";
       init().then(() => {
         flush_reload("WebAssembly");
       });
     </script>
+    <button onclick="attack()">start attack</button>
   </body>
 </html>

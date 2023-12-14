@@ -1,5 +1,5 @@
 #!/bin/bash	
-./fr ../gpg/gpg.probe &
+./fr ../gpg/gpg-native.probe &
 FR_PID=$!
 sleep 0.01
 (echo "GPG start"; ${GPG}  --quiet -d ${TARGET_FILE} > /dev/null; echo "GPG end") &
