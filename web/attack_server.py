@@ -42,17 +42,6 @@ class MyServer(BaseHTTPRequestHandler):
     def encrypt(self):
         subprocess.getoutput("${GPG} --yes -e hello.txt")
 
-    def get_mimetype(self, filepath):
-        guess, encoding = mimetypes.guess_type(filepath)
-        if guess:
-            return guess, encoding
-        return 'application/octet-stream', None
-        # if filepath.suffix == ".html":
-        #     return "text/html"
-        # elif filepath.suffix == ".js":
-        #     return "text/javascript"
-        # return "text/{}".format(filepath.suffix[1:])
-
     def send_file(self, filepath):
         with open(filepath, "rb") as f:
             self.wfile.write(f.read())

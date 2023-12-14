@@ -40,7 +40,7 @@ int parse_config(int argc, char** argv, Config* config) {
     goto error;
   }
   char buf[BUFFER_SIZE];
-  // one line per iteration (unless you are playing with the gpg.probe file)
+  // one line per iteration (unless you are playing too much with the gpg-native.probe file)
   while( fgets(buf, BUFFER_SIZE, config_file) ) {
     char* space = strchr(buf, ' ');
     size_t size = space - buf;
