@@ -1,8 +1,10 @@
-.PHONY: build-docker run-docker-native plot build-bento build-plunger build-reducer
+.PHONY: build-docker run-docker-web run-docker-native plot build-bento build-plunger build-reducer
 build-docker:
 	docker build -t fr .
 run-docker-native: build-docker
-	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr
+	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack build-bento parse compare"
+run-docker-web: build-docker
+	docker run -it --rm -p 8000:8000 -v $$(pwd)/data:/app/data --name "fr" fr
 serve:
 	$(MAKE) -C web serve
 objdump:

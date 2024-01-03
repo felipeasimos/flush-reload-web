@@ -1,8 +1,12 @@
-from debian:bookworm
+FROM debian:bookworm
 
 # install and build requirements
 RUN apt update
-RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim
+RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim curl
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > ./install_rust.sh && chmod +x install_rust.sh && ./install_rust.sh -y
+ENV CARGO_BIN /root/.cargo/bin
+ENV PATH="${PATH}:${CARGO_BIN}"
+RUN ${CARGO_BIN}/cargo install wasm-pack
 # setup gpg key
 WORKDIR /app/gpg/
 ADD ./gpg/setup-gpg.sh /app/gpg/setup-gpg.sh
@@ -15,5 +19,8 @@ RUN ["make", "create-key"]
 ENV TARGET_FILE /app/gpg/hello.txt.gpg
 ADD . /app
 WORKDIR /app
-EXPOSE 8000
-CMD bash -c "make attack build-bento parse compare; bash"
+# build web app
+# EXPOSE 8000
+# CMD bash -c "make attack build-bento parse compare; bash"
+# CMD bash
+CMD bash -c "make serve"

@@ -4,7 +4,7 @@ from pathlib import Path
 import mimetypes
 import subprocess
 
-hostName = "localhost"
+hostName = "0.0.0.0"
 serverPort = 8000
 
 

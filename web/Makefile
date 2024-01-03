@@ -3,6 +3,7 @@ mkfile_dir := $(dir $(mkfile_path))
 
 .PHONY: build-web serve
 build-web:
+	echo $$PATH
 	wasm-pack build --target web
 serve: build-web
 	cd $(mkfile_dir)
