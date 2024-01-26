@@ -1,7 +1,7 @@
 threshold 50
 wait_cycles 10
 time_slots 3500
-time_slot_size 10
+time_slot_size 12
 target_file ../gpg/gnupg-1.4.13/g10/gpg
 probe 0x9c681
 probe 0x9b597
