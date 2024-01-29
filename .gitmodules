@@ -1,0 +1,3 @@
+[submodule "web/eagle_timer"]
+	path = web/eagle_timer
+	url = git@github.com:asimos-bot/eagle_timer.git

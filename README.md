@@ -150,3 +150,18 @@ time_slots = 100000
 * Sub -> signed by Master. Used for encryption/decryption (can also be used for signing)
 
 In our attack, we observer the encryption procedure done by the subkey.
+
+## WebAssembly
+
+Whether it is Rust, C or C++, the underlying LLVM IR is used to compile to webassembly. This means that the memory layout of the three is the same: 
+
+```
++----------+---------+---------+
+|          |         |         |
+|   data   | <-stack |  heap-> |
+|          |         |         |
++----------+---------+---------+
+0    __data_end  __heap_base    max memory
+```
+
+`__data_end` and `__heap_base` are exported by the webassembly module.

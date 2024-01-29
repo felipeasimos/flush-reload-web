@@ -8,7 +8,7 @@ use crate::config::Config;
 const CACHE_LINE_SIZE : usize = 64;
 const CACHE_ASSOCIATIVITY : usize = 12;
 
-#[wasm_bindgen(module = "/js-to-rust.js")]
+#[wasm_bindgen(module = "/js/js-to-rust.js")]
 extern "C" {
     fn getTime() -> u32;
     fn encrypt();
