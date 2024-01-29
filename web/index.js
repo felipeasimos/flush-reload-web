@@ -1,5 +1,5 @@
 const memory = new WebAssembly.Memory({
-  initial: 10,
+  initial: 20,
   maximum: 100,
   shared: true
 });
@@ -15,8 +15,10 @@ async function start() {
   clockWorker.postMessage({module: clockModule, memory: memory}) 
 
   // get attack wasm worker
+  const attackResponse = await fetch("./target/wasm32-unknown-unknown/release/flush_reload.wasm")
+  const attackModule = new WebAssembly.Module(await attackResponse.arrayBuffer());
   const attackWorker = new Worker('./attack.js');
-  attackWorker.postMessage({memory: memory});
+  attackWorker.postMessage({module: attackModule, memory: memory});
 
   attackWorker.onmessage = (event) => {
     new Chart(document.getElementById("results"), {

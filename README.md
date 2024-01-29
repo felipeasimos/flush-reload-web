@@ -153,7 +153,7 @@ In our attack, we observer the encryption procedure done by the subkey.
 
 ## WebAssembly
 
-Whether it is Rust, C or C++, the underlying LLVM IR is used to compile to webassembly. This means that the memory layout of the three is the same: 
+Whether it is Rust (without `wasm_bindgen`), C or C++, the underlying LLVM IR is used to compile to webassembly. This means that the memory layout of the three is the same: 
 
 ```
 +----------+---------+---------+

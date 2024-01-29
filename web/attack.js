@@ -30,17 +30,37 @@ async function getConfig() {
   return config
 }
 
-const rust = import("./pkg/flush_reload.js"); 
-self.onmessage = (event) => {
-  rust
-    .then(async (m) => {
-      m.default().then(async wasm => {
-        let target = await getTargetArrayBuffer();
-        let config = await getConfig();
-        console.log(wasm)
-        let probes = new Uint32Array(config.probe);
-        let results = m.flush_reload(config.threshold, config.time_slots, config.wait_cycles, config.time_slot_size, probes, target);
-        console.log(results)
-      })
-    })
+function encrypt() {
+  fetch("/encrypt", {method: "POST"})
+}
+
+function random() {
+  return Math.random()
+}
+
+let buffer = null;
+
+function getTime() {
+  return buffer.getBigUint64(1, true)
+}
+
+self.onmessage = async (event) => {
+  let target = await getTargetArrayBuffer();
+  let config = await getConfig();
+  const {module, memory} = event.data;
+  const instance = new WebAssembly.Instance(module, {
+    env: {
+      memory: memory
+    },
+    js: {
+      getTime: getTime,
+      encrypt: encrypt,
+      random: random,
+      log: console.log
+    }
+  });
+  buffer = new DataView(memory.buffer);
+  console.log(instance.exports.get_time())
+  console.log(instance.exports.get_time())
+  console.log(instance.exports.flush_reload(config.threshold, config.time_slots, config.wait_cycles, config.time_slot_size))
 }

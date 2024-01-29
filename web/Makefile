@@ -1,10 +1,12 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 
-.PHONY: build-web serve
-build-web:
+.PHONY: build serve
+build:
 	$(MAKE) -C eagle_timer build
-	wasm-pack build --target web
-serve: build-web
+	RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+mutable-globals" cargo build --release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
+serve: build
 	cd $(mkfile_dir)
 	python3 server.py
+show: build
+	wasm2wat target/wasm32-unknown-unknown/release/flush_reload.wasm --enable-threads | less
