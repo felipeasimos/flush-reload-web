@@ -14,4 +14,11 @@ crate-type = ["cdylib", "rlib"]
 [profile.release]
 panic = "abort"
 lto = true
-wasm-opt = false
+wasm-opt = true
+
+[build]
+rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"] 
+target = "wasm32-unknown-unknown"
+
+[dependencies]
+lol_alloc = "0.4.0"

@@ -4,7 +4,7 @@ mkfile_dir := $(dir $(mkfile_path))
 .PHONY: build serve
 build:
 	$(MAKE) -C eagle_timer build
-	RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+mutable-globals" cargo build --release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
+		cargo build --release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
 serve: build
 	cd $(mkfile_dir)
 	python3 server.py
