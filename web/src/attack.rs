@@ -1,4 +1,4 @@
-use alloc::{vec::Vec, collections::LinkedList};
+use alloc::{alloc::alloc, collections::LinkedList, vec::Vec};
 use js::{encrypt, random, log};
 
 const CACHE_LINE_SIZE : usize = 64;
@@ -105,11 +105,21 @@ fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
 }
 
 #[no_mangle]
-pub extern "C" fn alloc(len: usize) -> *mut u8 {
-    let mut buf = Vec::<u8>::with_capacity(len);
-    let ptr = buf.as_mut_ptr();
-    core::mem::forget(buf);
-    ptr
+pub extern "C" fn my_alloc(len: usize) -> *mut u8 {
+    let align = core::mem::align_of::<usize>();
+    let layout = unsafe { core::alloc::Layout::from_size_align_unchecked(len, align) };
+    unsafe { alloc::alloc::alloc(layout) }
+    // let mut buf = Vec::<u8>::with_capacity(len);
+    // let ptr = buf.as_mut_ptr();
+    // core::mem::forget(buf);
+    // ptr
+}
+
+#[no_mangle]
+pub extern "C" fn my_dealloc(ptr: *mut u8, len: usize) {
+    let align = core::mem::align_of::<usize>();
+    let layout = unsafe { core::alloc::Layout::from_size_align_unchecked(len, align) };
+    unsafe { alloc::alloc::dealloc(ptr, layout) }
 }
 
 #[no_mangle]
@@ -120,8 +130,8 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     // log_2(&"time_slot_size:".into(), &JsValue::from_f64(time_slot_size as f64));
     // log_1(&format!("probe: {:?}", probes.iter().cloned().collect::<Vec<u32>>()).into());
     // log_1(&format!("probe: {:?}", target.len()).into());
-    let target = unsafe { Vec::from_raw_parts(target, target_size, target_size) };
-    let probes = unsafe { Vec::from_raw_parts(probes, probe_size, probe_size) };
+    let target = unsafe { core::slice::from_raw_parts(target, target_size) };
+    let probes = unsafe { core::slice::from_raw_parts(probes, probe_size) };
     log(threshold as u64);
     log(time_slots as u64);
     log(wait_cycles as u64);

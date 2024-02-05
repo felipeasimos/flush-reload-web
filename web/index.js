@@ -1,6 +1,6 @@
 const memory = new WebAssembly.Memory({
   initial: 20,
-  maximum: 100,
+  maximum: 900,
   shared: true
 });
 
