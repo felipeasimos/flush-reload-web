@@ -67,15 +67,15 @@ self.onmessage = async (event) => {
       log: console.log
     }
   });
-  memory.grow(90)
+  // memory.grow(90)
   const probes = new Uint8Array(new Uint32Array(config.probe).buffer)
   console.log(config.probe)
   console.log(probes)
   const target_ptr = copyMemory(target, instance, target.length)
   const probe_ptr = copyMemory(probes, instance, probes.length * 4);
   const box_u32_length = config.probe.length * config.time_slots;
+  buffer = new DataView(memory.buffer)
   const box_u32_ptr = instance.exports.flush_reload(config.threshold, config.time_slots, config.wait_cycles, config.time_slot_size, probe_ptr, probes.length, target_ptr, target.length)
-  instance.exports.my_dealloc(probe_ptr, probes.byteLength)
-  instance.exports.my_dealloc(target_ptr, target.byteLength)
+  console.log("afasdfasdfasdf")
   console.log("box ptr:", box_u32_ptr)
 }

