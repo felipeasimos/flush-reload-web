@@ -20,7 +20,7 @@ ENV TARGET_FILE /app/gpg/hello.txt.gpg
 ADD . /app
 WORKDIR /app
 # build web app
-# EXPOSE 8000
+EXPOSE 8000
 # CMD bash -c "make attack build-bento parse compare; bash"
 # CMD bash
 CMD bash -c "make serve"

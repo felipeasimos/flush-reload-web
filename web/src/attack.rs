@@ -33,9 +33,9 @@ mod js {
 pub extern "C" fn get_time() -> u64 {
     unsafe {
         // core::ptr::read_unaligned(1 as *const i64) as u64
-        let t : u64 = *(1 as *const u64);
-        t
-        // js::get_time()
+        // let t : u64 = *(1 as *const u64);
+        // t
+        js::get_time()
     }
 }
 
