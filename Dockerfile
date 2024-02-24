@@ -2,11 +2,12 @@ FROM debian:bookworm
 
 # install and build requirements
 RUN apt update
-RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim curl
+RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim curl wabt binaryen
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > ./install_rust.sh && chmod +x install_rust.sh && ./install_rust.sh -y
 ENV CARGO_BIN /root/.cargo/bin
 ENV PATH="${PATH}:${CARGO_BIN}"
-RUN ${CARGO_BIN}/cargo install wasm-pack
+RUN rustup toolchain install nightly
+RUN rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
 # setup gpg key
 WORKDIR /app/gpg/
 ADD ./gpg/setup-gpg.sh /app/gpg/setup-gpg.sh

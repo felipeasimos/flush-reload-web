@@ -76,6 +76,8 @@ self.onmessage = async (event) => {
   const box_u32_length = config.probe.length * config.time_slots;
   buffer = new DataView(memory.buffer)
   const box_u32_ptr = instance.exports.flush_reload(config.threshold, config.time_slots, config.wait_cycles, config.time_slot_size, probe_ptr, probes.length, target_ptr, target.length)
+  let box = new Uint32Array(memory.buffer, box_u32_ptr, box_u32_length)
   console.log("afasdfasdfasdf")
   console.log("box ptr:", box_u32_ptr)
+  self.postMessage(box)
 }

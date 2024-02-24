@@ -1,6 +1,6 @@
 const memory = new WebAssembly.Memory({
-  initial: 10,
-  maximum: 100,
+  initial: 1000,
+  maximum: 1000,
   shared: true
 });
 
@@ -21,6 +21,7 @@ async function start() {
   attackWorker.postMessage({module: attackModule, memory: memory});
 
   attackWorker.onmessage = (event) => {
+    const results = event.data;
     new Chart(document.getElementById("results"), {
       type: 'scatter',
       data: {
