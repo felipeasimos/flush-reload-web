@@ -41,7 +41,7 @@ function random() {
 let buffer = null;
 
 function getTime() {
-  return buffer.getBigUint64(1, true)
+  return buffer.getBigUint64(0, true)
 }
 
 function copyMemory(data, instance, nbytes) {

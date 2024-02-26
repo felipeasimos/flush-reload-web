@@ -13,8 +13,10 @@ crate-type = ["cdylib", "rlib"]
 
 [profile.release]
 panic = "abort"
-lto = true
+lto = false
 wasm-opt = true
+opt-level = 3
+overflow-checks = false
 
 [build]
 rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"] 
