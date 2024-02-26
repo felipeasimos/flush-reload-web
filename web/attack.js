@@ -69,15 +69,19 @@ self.onmessage = async (event) => {
   });
   // memory.grow(90)
   const probes = new Uint8Array(new Uint32Array(config.probe).buffer)
-  console.log(config.probe)
-  console.log(probes)
   const target_ptr = copyMemory(target, instance, target.length)
   const probe_ptr = copyMemory(probes, instance, probes.length * 4);
-  const box_u32_length = config.probe.length * config.time_slots;
   buffer = new DataView(memory.buffer)
-  const box_u32_ptr = instance.exports.flush_reload(config.threshold, config.time_slots, config.wait_cycles, config.time_slot_size, probe_ptr, probes.length, target_ptr, target.length)
-  let box = new Uint32Array(memory.buffer, box_u32_ptr, box_u32_length)
-  console.log("afasdfasdfasdf")
-  console.log("box ptr:", box_u32_ptr)
-  self.postMessage(box)
+  const box_info_ptr = instance.exports.my_alloc(8);
+  console.log("box_info_ptr: ", box_info_ptr);
+
+  instance.exports.flush_reload(box_info_ptr, config.threshold, config.time_slots, config.wait_cycles, config.time_slot_size, probe_ptr, probes.length, target_ptr, target.length)
+  console.log("flush_reload function over")
+  const box = new Uint32Array(instance.exports.memory.buffer, box_info_ptr, 2)
+  console.log("box: ", box); // correct
+  const box_ptr = box[0];
+  const box_length = box[1];
+  console.log(box_ptr, box_length)
+  const results = new Uint32Array(instance.exports.memory.buffer, box_ptr, box_length);
+  self.postMessage(results)
 }

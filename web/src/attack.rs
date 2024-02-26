@@ -1,4 +1,6 @@
-use alloc::{alloc::alloc, collections::LinkedList, vec::Vec};
+use core::mem::ManuallyDrop;
+
+use alloc::{boxed::Box, collections::LinkedList, vec::Vec};
 use js::{encrypt, random, log};
 
 const CACHE_LINE_SIZE : usize = 64;
@@ -126,16 +128,13 @@ pub extern "C" fn my_dealloc(ptr: *mut u8, len: usize) {
 }
 
 #[no_mangle]
-pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32, time_slot_size: u32, probes: *mut u32, probe_size: usize, target: *mut u8, target_size: usize) -> *mut u32 {
+pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32, time_slot_size: u32, probes: *mut u32, probe_size: usize, target: *mut u8, target_size: usize) -> Box<[u32]> {
     let target = unsafe { core::slice::from_raw_parts(target, target_size) };
     let probes = unsafe { core::slice::from_raw_parts(probes, probe_size) };
     log(threshold as u64);
-    log(time_slots as u64);
     log(wait_cycles as u64);
+    log(time_slots as u64);
     log(time_slot_size as u64);
-    log(probes[0] as u64);
-    log(probes[1] as u64);
-    log(probes[2] as u64);
     log(get_time() as u64);
     log(get_time() as u64);
     log(get_time() as u64);
@@ -144,7 +143,6 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     log(get_time() as u64);
 
     let candidate_set : LinkedList<u32> = generate_candidate_set(target.as_ref());
-    log(1234);
     let eviction_sets : Vec<LinkedList<u32>> = probes //config.probes
         .iter()
         .map(|offset| generate_eviction_set(target.as_ref(), *offset, &candidate_set, threshold as u64))
@@ -166,7 +164,14 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
             time_slot_results
         })
         .collect();
-    let ptr = results.as_mut_ptr();
-    core::mem::forget(results);
-    ptr
+    results[0] = 1;
+    results[1] = 2;
+    results[2] = 3;
+    let boxed : Box<[u32]> = results.into_boxed_slice();
+
+    log(boxed[0] as u64);
+    log(boxed[1] as u64);
+    log(boxed[2] as u64);
+    log(boxed.len() as u64);
+    boxed
 }
