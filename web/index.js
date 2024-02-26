@@ -21,7 +21,14 @@ async function start() {
   attackWorker.postMessage({module: attackModule, memory: memory});
 
   attackWorker.onmessage = (event) => {
-    const results = event.data;
+    const raw_results = event.data;
+    console.log(raw_results)
+    // divide into the time slots again
+    const chunk_size = 3;
+    let results = []
+    for(let i = 0; i < raw_results.length; i += chunk_size) {
+      results.push(raw_results.slice(i, i + chunk_size))
+    }
     console.log(results)
     new Chart(document.getElementById("results"), {
       type: 'scatter',

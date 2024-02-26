@@ -82,6 +82,6 @@ self.onmessage = async (event) => {
   const box_ptr = box[0];
   const box_length = box[1];
   console.log(box_ptr, box_length)
-  const results = new Uint32Array(instance.exports.memory.buffer, box_ptr, box_length);
+  const results = new Uint32Array(instance.exports.memory.buffer, box_ptr, box_length / 4);
   self.postMessage(results)
 }
