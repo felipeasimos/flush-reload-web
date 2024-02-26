@@ -1,7 +1,8 @@
-self.addEventListener("message", (event) => {
-  const sab = event.data;
-  self.postMessage("initialized timer")
-  while(1) {
-    sab[0]++;
-  }
-});
+self.onmessage = function(e) {
+  const {module, memory} = e.data;
+  const instance = new WebAssembly.Instance(module, {
+    env: { memory: memory }
+  });
+  console.log("clock instance created")
+  console.log(instance.exports.counter())
+}

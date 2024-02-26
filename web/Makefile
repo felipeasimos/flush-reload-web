@@ -3,7 +3,8 @@ mkfile_dir := $(dir $(mkfile_path))
 
 .PHONY: build serve
 build:
-	$(MAKE) -C eagle_timer build
+	wat2wasm src/attack.wat --enable-threads -o attack.wasm
+	wat2wasm src/counter.wat --enable-threads -o counter.wasm
 	cargo build --release --target wasm32-unknown-unknown -Zbuild-std=std,panic_abort
 serve: build
 	cd $(mkfile_dir)

@@ -55,18 +55,29 @@ function copyMemory(data, instance, nbytes) {
 self.onmessage = async (event) => {
   let target = await getTargetArrayBuffer();
   let config = await getConfig();
-  const {module, memory} = event.data;
+  const {module, memory, utils} = event.data;
+  console.log(memory)
+  const wasm_utils = new WebAssembly.Instance(utils, {
+    env: {
+      memory: memory
+    }
+  })
   const instance = new WebAssembly.Instance(module, {
     env: {
       memory: memory
     },
     js: {
-      getTime: getTime,
       encrypt: encrypt,
       random: random,
       log: console.log
+    },
+    wasm: {
+      access: wasm_utils.exports.access,
+      get_time: wasm_utils.exports.get_time,
+      timed_access: wasm_utils.exports.timed_access
     }
   });
+
   // memory.grow(90)
   const probes = new Uint8Array(new Uint32Array(config.probe).buffer)
   const target_ptr = copyMemory(target, instance, target.length)
@@ -81,7 +92,6 @@ self.onmessage = async (event) => {
   console.log("box: ", box); // correct
   const box_ptr = box[0];
   const box_length = box[1];
-  console.log(box_ptr, box_length)
   const results = new Uint32Array(instance.exports.memory.buffer, box_ptr, box_length / 4);
   self.postMessage(results)
 }

@@ -9,16 +9,20 @@ const buffer = new DataView(memory.buffer)
 
 async function start() {
   // get clock wasm started
-  const clockResponse = await fetch("./eagle_timer/clock.wasm");
-  const clockModule = new WebAssembly.Module(await clockResponse.arrayBuffer());
-  const clockWorker = new Worker('./eagle_timer/clock.js');
-  clockWorker.postMessage({module: clockModule, memory: memory}) 
+  const counterResponse = await fetch("./counter.wasm");
+  const counterModule = new WebAssembly.Module(await counterResponse.arrayBuffer());
+  const counterWorker = new Worker('./js/counter.js');
+  counterWorker.postMessage({module: counterModule, memory: memory}) 
+
+  // attack utils
+  const utilsResponse = await fetch("./attack.wasm")
+  const utilsModule = new WebAssembly.Module(await utilsResponse.arrayBuffer());
 
   // get attack wasm worker
   const attackResponse = await fetch("./target/wasm32-unknown-unknown/release/flush_reload.wasm")
   const attackModule = new WebAssembly.Module(await attackResponse.arrayBuffer());
   const attackWorker = new Worker('./attack.js');
-  attackWorker.postMessage({module: attackModule, memory: memory});
+  attackWorker.postMessage({module: attackModule, memory: memory, utils: utilsModule});
 
   attackWorker.onmessage = (event) => {
     const raw_results = event.data;
