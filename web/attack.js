@@ -30,8 +30,10 @@ async function getConfig() {
   return config
 }
 
-function encrypt() {
+function encrypt() { 
+  console.log("calling encrypt");
   fetch("/encrypt", {method: "POST"})
+    .then(() => console.log("encrypt done!"))
 }
 
 function random() {

