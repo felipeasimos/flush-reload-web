@@ -5,6 +5,25 @@
         i64.load8_u
         drop
     )
+    (func $timed_hit (param $offset i32) (result i64)
+        (local i64)
+        local.get $offset
+        i64.load8_u
+        drop
+        ;; get start time and save it to local variable
+        i32.const 0
+        i64.load
+        local.set 1
+        ;; perform read from offset
+        local.get $offset
+        i64.load8_u
+        drop
+        ;; get end time and return it
+        i32.const 0
+        i64.load
+        local.get 1
+        i64.sub
+    )
     (func $timed_access (param $offset i32) (result i64)
         (local i64)
         ;; get start time and save it to local variable
@@ -28,4 +47,5 @@
     (export "get_time" (func $get_time))
     (export "access" (func $access))
     (export "timed_access" (func $timed_access))
+    (export "timed_hit" (func $timed_hit))
 )
