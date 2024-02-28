@@ -82,9 +82,10 @@ self.onmessage = async (event) => {
     },
   });
 
-  const probes = new Uint8Array(new Uint32Array(config.probe).buffer);
+  const probes = new Uint32Array(config.probe).buffer;
+  console.log("probes:", probes);
   const target_ptr = copyMemory(target, instance, target.length);
-  const probe_ptr = copyMemory(probes, instance, probes.length * 4);
+  const probe_ptr = copyMemory(probes, instance, probes.length);
   buffer = new DataView(memory.buffer);
   const box_info_ptr = instance.exports.my_alloc(8);
   console.log("box_info_ptr: ", box_info_ptr);
@@ -96,7 +97,7 @@ self.onmessage = async (event) => {
     config.wait_cycles,
     config.time_slot_size,
     probe_ptr,
-    probes.length,
+    config.probe.length,
     target_ptr,
     target.length,
   );

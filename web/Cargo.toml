@@ -13,9 +13,9 @@ crate-type = ["cdylib", "rlib"]
 
 [profile.release]
 panic = "abort"
-lto = false
-wasm-opt = false
-opt-level = 0
+lto = true
+wasm-opt = true
+opt-level = 3
 overflow-checks = false
 
 [build]
