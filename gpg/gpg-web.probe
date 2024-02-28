@@ -1,4 +1,4 @@
-threshold 120
+threshold 1000
 wait_cycles 0
 time_slots 1000
 time_slot_size 0

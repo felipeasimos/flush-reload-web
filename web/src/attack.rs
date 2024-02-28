@@ -82,23 +82,14 @@ pub fn generate_eviction_set(
     let mut candidate_set = candidate_set.clone();
     let mut eviction_set: LinkedList<u32> = LinkedList::new();
     while let Some(random_offset) = candidate_set.pop_front() {
-        env::log(random_offset as u64);
-        env::log(44444444);
-        env::log(eviction_set.len() as u64);
-        env::log(candidate_set.len() as u64);
         if eviction_set.len() >= CACHE_ASSOCIATIVITY {
             break;
         }
-        env::log(55555555);
         let mut new_eviction_set: LinkedList<u32> = eviction_set.clone();
-        env::log(candidate_set.len() as u64);
         new_eviction_set.append(&mut candidate_set.clone());
-        env::log(candidate_set.len() as u64);
         if threshold < get_slow_time(&new_eviction_set, probe) {
             eviction_set.push_back(random_offset);
         }
-        env::log(eviction_set.len() as u64);
-        env::log(candidate_set.len() as u64);
     }
     if candidate_set.len() == 0 {
         env::log(11111111);
@@ -107,6 +98,7 @@ pub fn generate_eviction_set(
         env::log(eviction_set.len() as u64);
         env::log(11111111);
     }
+    env::log(22222222);
     eviction_set
 }
 
