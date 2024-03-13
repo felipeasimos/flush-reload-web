@@ -1,5 +1,14 @@
 # Flush Reload on the Web
 
+## TODO
+
+* problem: not getting good web results
+1. raw linked list
+    1. remove LinkedList
+    2. timed_miss
+    3. evict
+2. raw linked list in wat
+
 ## How to Run
 
 Ultimately there will be 3 ways to execute the attack: on the web with javascript, on the web with webassembly and natively.
