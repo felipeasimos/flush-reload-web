@@ -70,6 +70,7 @@ pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
         vec[pointer as usize] = i + base_ptr;
         pointer = *i;
     });
+    vec[pointer as usize] = 0x00;
     vec
 }
 
