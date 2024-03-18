@@ -79,7 +79,8 @@ self.onmessage = async (event) => {
       get_time: wasm_utils.exports.get_time,
       timed_access: wasm_utils.exports.timed_access,
       timed_hit: wasm_utils.exports.timed_hit,
-      timed_miss: wasm_utils.exports.timed_miss
+      timed_miss: wasm_utils.exports.timed_miss,
+      evict: wasm_utils.exports.evict
     },
   });
 

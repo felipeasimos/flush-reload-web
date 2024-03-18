@@ -83,9 +83,32 @@
         local.get $time
         i64.sub
     )
+    (func $evict (param $linked_list i32)
+        (local $data i64)
+        (local $ptr i32)
+        ;; access victim
+        (; local.get $offset ;)
+        (; i64.load ;)
+        (; local.set $data ;)
+        ;; go through linked list
+        local.get $linked_list
+        i32.load
+        local.set $ptr
+        ;; 
+        (
+            loop $iter
+                local.get $ptr
+                i32.load
+                local.set $ptr
+                local.get $ptr
+                i32.eqz
+                br_if $iter
+        )
+    )
     (export "get_time" (func $get_time))
     (export "access" (func $access))
     (export "timed_access" (func $timed_access))
     (export "timed_hit" (func $timed_hit))
     (export "timed_miss" (func $timed_miss))
+    (export "evict" (func $evict))
 )
