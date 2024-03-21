@@ -174,3 +174,7 @@ Whether it is Rust (without `wasm_bindgen`), C or C++, the underlying LLVM IR is
 ```
 
 `__data_end` and `__heap_base` are exported by the webassembly module.
+
+## Theory and Practice of Finding Eviction Sets
+
+

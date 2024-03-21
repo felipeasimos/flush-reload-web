@@ -16,7 +16,7 @@ panic = "abort"
 lto = true
 wasm-opt = true
 opt-level = 3
-overflow-checks = false
+overflow-checks = true
 
 [build]
 rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"] 

