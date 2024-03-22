@@ -72,7 +72,7 @@ pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
         env::log(pointer as u64);
         vec[pointer as usize] = indices[i] + base_ptr;
         env::log(i as u64);
-        pointer = indices[i];
+        pointer = vec[indices[i] as usize];
         env::log(i as u64);
     }
     vec[pointer as usize] = 0x00;

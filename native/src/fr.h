@@ -1,3 +1,6 @@
+#ifndef FR_H
+#define FR_H
+
 #include <stdint.h>
 
 // MFENCE - load-from-memory and store-to-memory instructions that come before it are serialized (avoid out of order loads/stores)
@@ -41,3 +44,10 @@ static inline __attribute__((always_inline)) uint64_t reload(uint8_t* p) {
     fence();
     return load_time(p);
 }
+
+static inline __attribute__((always_inline)) uint64_t timed_hit(uint8_t* p) {
+  access_addr(p);
+  return load_time(p);
+}
+
+#endif

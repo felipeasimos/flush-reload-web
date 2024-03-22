@@ -6,8 +6,10 @@
 #include <string.h>
 #include "fr.h"
 #include "config.h"
+#include "ev.h"
 
 // #define WITH_TIMING 1
+// #define WITH_EV 1
 
 #define wait(cycles) for(volatile uint64_t _i = 0; _i < cycles; _i++)
 
@@ -39,6 +41,12 @@ void spy(void** addrs, uint32_t num_addrs, uint16_t* results, uint32_t num_resul
 }
 
 int main(int argc, char** argv) {
+  #if defined(WITH_EV)
+    printf("WITH_EV: %d\n", WITH_EV);
+  #endif
+  #if defined(WITH_TIMING)
+    printf("WITH_TIMING: %d\n", WITH_TIMING);
+  #endif
   Config config;
   if( parse_config(argc, argv, &config) == -1 ) return 1;
   // create addresses
@@ -57,6 +65,38 @@ int main(int argc, char** argv) {
   for(uint32_t i = 0; i < config.num_addrs; i++) {
     printf("\taddr[%u] = %p\n", i, config.addrs[i]);
   }
+
+#if defined(WITH_EV) && WITH_EV
+  printf("hey\n");
+  void* pool = mmap (NULL, BUFFER_SIZE, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+  printf("hello\n");
+  Arr candidates = generate_candidate_set(pool);
+  printf("sup\n");
+  Arr ev_sets[config.num_addrs];
+  for(unsigned int i = 0; i < config.num_addrs; i++) {
+    ev_sets[i] = generate_eviction_set(config.addrs[i], candidates, config.threshold);
+  }
+  printf("whatup\n");
+  arr_free(candidates);
+  printf("byebye\n");
+  // Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
+  printf("ohno\n");
+  unsigned t_hit = 0;
+  for(unsigned int i = 0; i < config.num_addrs; i++) {
+    for(unsigned int j = 0; j < 1000; j++) {
+      t_hit += timed_hit(config.addrs[i]);
+    }
+  }
+  printf("timed_hit avg: %u\n", t_hit / 1000);
+  unsigned int t_miss = 0;
+  for(unsigned int i = 0; i < config.num_addrs; i++) {
+    for(unsigned int j = 0; j < 1000; j++) {
+      t_miss += timed_miss(&ev_sets[i].arr, config.addrs[i]);
+    }
+  }
+  printf("timed_miss avg: %u\n", t_miss / 1000);
+#endif
+
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
   spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles, config.time_slot_size, config.threshold);
   fprintf(stderr, "\t|||   ...closed spy...   |||\n");

@@ -2,12 +2,12 @@
 
 ## TODO
 
-* problem: not getting good web results
-1. raw linked list
-    1. remove LinkedList
-    2. timed_miss
-    3. evict
-2. raw linked list in wat
+* evsets in C for native
+1. timed_miss in raw assembly
+2. only access one mmap memory region for probing
+3. evsets store addresses in that memory region
+4. generate conflict set (remove conflicts between evsets in the linked list and get one final evset)
+
 
 ## How to Run
 
