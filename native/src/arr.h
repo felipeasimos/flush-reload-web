@@ -7,7 +7,7 @@ typedef struct Arr {
 } Arr;
 
 Arr arr_init(unsigned int len);
-void arr_free(Arr arr);
+void arr_free(Arr* arr);
 Arr arr_clone(Arr* arr);
 void* arr_pop(Arr* arr);
 void arr_push(Arr* arr, void* pointer);

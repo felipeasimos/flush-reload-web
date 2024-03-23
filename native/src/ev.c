@@ -6,7 +6,7 @@
 
 void* to_linked_list(Arr* set) {
   if(!set->len) return NULL;
-  void** pointer = set->arr[0];
+  void** pointer = &set->arr[0];
   for(unsigned int i = 1; i < set->len; i++) {
     *pointer = set->arr[i];
     pointer = set->arr[i];
@@ -15,14 +15,15 @@ void* to_linked_list(Arr* set) {
   return set->arr[0];
 }
 
+#include <stdio.h>
 Arr generate_candidate_set(void* pool) {
   srand(time(0));
   Arr arr = {
     .len = NUMBER_OF_CANDIDATES,
-    .arr = calloc(NUMBER_OF_CANDIDATES, sizeof(unsigned int))
+    .arr = calloc(NUMBER_OF_CANDIDATES, sizeof(void*))
   };
   // populate array of candidate indices
-  for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = pool + ((i * CACHE_LINE_SIZE) + 1);
+  for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = pool + ((i * CACHE_LINE_SIZE));
   // swap indices around
   for(unsigned int i = 0; i < arr.len; i++) {
     unsigned int to_swap = rand() % arr.len;
@@ -38,15 +39,19 @@ Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
     .len = 0,
     .arr = NULL
   };
-  for(void* random_offset = 0; random_offset; random_offset = arr_pop(&cand)) {
+  cand = arr_clone(&cand);
+  for(void* random_offset = arr_pop(&cand); random_offset; random_offset = arr_pop(&cand)) {
+    printf("random_offset: %p\n", random_offset);
+    fflush(stdout);
     Arr ev_clone = arr_clone(&ev);
     arr_append(&ev_clone, &cand);
     void* linked_list = to_linked_list(&ev_clone);
     if(threshold < timed_miss(&linked_list, probe)) {
       arr_push(&ev, random_offset);
     }
-    arr_free(ev_clone);
+    arr_free(&ev_clone);
   }
+  arr_free(&cand);
   return ev;
 }
 
@@ -65,7 +70,7 @@ void merge_eviction_sets(Arr* a, Arr b) {
       }
     }
   }
-  arr_free(b);
+  arr_free(&b);
 }
 
 Arr generate_conflict_set(Arr* evs, unsigned long nevs) {

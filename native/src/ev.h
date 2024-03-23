@@ -28,11 +28,10 @@ static inline __attribute__((always_inline)) void traverse(void* evset) {
     : "cc", "memory"
   );
 }
-
-static inline __attribute__((always_inline)) uint64_t timed_miss(void** evset, uint8_t* p) {
+static inline __attribute__((always_inline)) uint64_t timed_miss(void* evset, uint8_t* p) {
   access_addr(p);
-  traverse(evset);
-  // while(evset) evset = (void**)*evset;
+  // traverse(evset);
+  // while(evset) evset = *(void**)evset;
   uint64_t t0 = rdtscp();
   access_addr(p);
   return rdtscp() - t0;
