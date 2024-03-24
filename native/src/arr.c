@@ -21,7 +21,7 @@ Arr arr_clone(Arr* arr) {
     .len = arr->len,
     .arr = calloc(arr->len, sizeof(void*))
   };
-  memcpy(arr->arr, arr_clone.arr, arr->len * sizeof(void*));
+  memcpy(arr_clone.arr, arr->arr, arr->len * sizeof(void*));
   return arr_clone;
 }
 
@@ -33,14 +33,14 @@ void* arr_pop(Arr* arr) {
 }
 
 void arr_push(Arr* arr, void* pointer) {
-  arr->arr = realloc(arr->arr, arr->len * sizeof(void*));
+  arr->arr = realloc(arr->arr, (arr->len+1) * sizeof(void*));
   arr->arr[arr->len++] = pointer;
 }
 
 Arr* arr_append(Arr* a, Arr* b) {
   unsigned int new_len = a->len + b->len;
   a->arr = realloc(a->arr, new_len * sizeof(void*));
-  memcpy(b->arr, a->arr + a->len, b->len * sizeof(void*));
+  memcpy(a->arr + a->len, b->arr, b->len * sizeof(void*));
   a->len = new_len;
   return a;
 }

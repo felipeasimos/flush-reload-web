@@ -41,8 +41,6 @@ Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
   };
   cand = arr_clone(&cand);
   for(void* random_offset = arr_pop(&cand); random_offset; random_offset = arr_pop(&cand)) {
-    printf("random_offset: %p\n", random_offset);
-    fflush(stdout);
     Arr ev_clone = arr_clone(&ev);
     arr_append(&ev_clone, &cand);
     void* linked_list = to_linked_list(&ev_clone);
