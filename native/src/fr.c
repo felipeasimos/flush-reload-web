@@ -77,6 +77,10 @@ int main(int argc, char **argv) {
   Arr ev_sets[config.num_addrs];
   for (unsigned int i = 0; i < config.num_addrs; i++) {
     ev_sets[i] = generate_eviction_set(config.addrs[i], candidates, config.threshold);
+    if(ev_sets[i].len == 0) {
+      printf("ev_sets[i].len is 0\n");
+      exit(1);
+    }
   }
   arr_free(&candidates);
   Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
@@ -90,7 +94,7 @@ int main(int argc, char **argv) {
   unsigned int t_miss = 0;
   for (unsigned int i = 0; i < config.num_addrs; i++) {
     for (unsigned int j = 0; j < 1000; j++) {
-      t_miss += timed_miss(ev_sets[i].arr[0], config.addrs[i]);
+      t_miss += timed_miss(to_linked_list(&ev_sets[i]), config.addrs[i]);
     }
   }
   printf("timed_miss avg: %u\n", t_miss / 1000);

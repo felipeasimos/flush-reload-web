@@ -3,6 +3,10 @@
 ## TODO
 
 * evsets in C for native
+    * retry from scratch if needed (start from allocating a new candidate set)
+    * bigger candidate set
+    * don't use naive approach (use threshold group testing)
+    * avg t in 100 rounds before comparing to threshold
 1. timed_miss in raw assembly
 2. only access one mmap memory region for probing
 3. evsets store addresses in that memory region

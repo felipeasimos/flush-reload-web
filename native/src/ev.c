@@ -40,16 +40,25 @@ Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
     .arr = NULL
   };
   cand = arr_clone(&cand);
-  for(void* random_offset = arr_pop(&cand); random_offset; random_offset = arr_pop(&cand)) {
+  unsigned int highest = 0;
+  for(void* random_offset = arr_peek(&cand); random_offset && ev.len < CACHE_ASSOCIATIVITY; random_offset = arr_peek(&cand)) {
     Arr ev_clone = arr_clone(&ev);
     arr_append(&ev_clone, &cand);
     void* linked_list = to_linked_list(&ev_clone);
-    if(threshold < timed_miss(&linked_list, probe)) {
+    unsigned int t = 0;
+    for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(linked_list, probe);
+    t /= ROUNDS_PER_SET;
+    if(t > highest) highest = t;
+    printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
+    if(threshold < t) {
       arr_push(&ev, random_offset);
+      arr_pop(&cand);
     }
     arr_free(&ev_clone);
   }
+  printf("\nhighest: %u\n", highest);
   arr_free(&cand);
+  arr_print(ev);
   return ev;
 }
 

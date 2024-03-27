@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM debian:12.5
 
 # install and build requirements
 RUN apt update
