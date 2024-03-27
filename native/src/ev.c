@@ -4,17 +4,6 @@
 #include <time.h>
 #include <stdlib.h>
 
-void* to_linked_list(Arr* set) {
-  if(!set->len) return NULL;
-  void** pointer = &set->arr[0];
-  for(unsigned int i = 1; i < set->len; i++) {
-    *pointer = set->arr[i];
-    pointer = set->arr[i];
-  }
-  *pointer = NULL;
-  return set->arr[0];
-}
-
 #include <stdio.h>
 Arr generate_candidate_set(void* pool) {
   srand(time(0));
@@ -23,7 +12,7 @@ Arr generate_candidate_set(void* pool) {
     .arr = calloc(NUMBER_OF_CANDIDATES, sizeof(void*))
   };
   // populate array of candidate indices
-  for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = pool + ((i * CACHE_LINE_SIZE));
+  for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = pool + ((i * STRIDE));
   // swap indices around
   for(unsigned int i = 0; i < arr.len; i++) {
     unsigned int to_swap = rand() % arr.len;
@@ -34,31 +23,33 @@ Arr generate_candidate_set(void* pool) {
   return arr;
 }
 
+uint64_t test_hit_without(Arr* ev, unsigned int without_idx, void* probe, unsigned int threshold) {
+  void* linked_list = to_linked_list_without(ev, without_idx);
+  unsigned int t = 0;
+  for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(linked_list, probe);
+  t /= ROUNDS_PER_SET;
+  // printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
+  return threshold < t;
+}
+
 Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
-  Arr ev = {
-    .len = 0,
-    .arr = NULL
-  };
-  cand = arr_clone(&cand);
-  unsigned int highest = 0;
-  for(void* random_offset = arr_peek(&cand); random_offset && ev.len < CACHE_ASSOCIATIVITY; random_offset = arr_peek(&cand)) {
-    Arr ev_clone = arr_clone(&ev);
-    arr_append(&ev_clone, &cand);
-    void* linked_list = to_linked_list(&ev_clone);
-    unsigned int t = 0;
-    for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(linked_list, probe);
-    t /= ROUNDS_PER_SET;
-    if(t > highest) highest = t;
-    printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
-    if(threshold < t) {
-      arr_push(&ev, random_offset);
-      arr_pop(&cand);
+  Arr ev = arr_clone(&cand);
+  while(ev.len > CACHE_ASSOCIATIVITY) {
+    // 1. split
+    // 2. set i = 0
+    unsigned int i = 0;
+    // 3. loop until a miss don't occur for (S \ T[i])
+    for(; !test_hit_without(&ev, i, probe, threshold) && i >= CACHE_ASSOCIATIVITY; i++) {
+    //    1. increment i
     }
-    arr_free(&ev_clone);
+    printf("ev.len: %u\n", ev.len);
+    if(i >= CACHE_ASSOCIATIVITY) {
+      printf("wtf\n");
+      exit(1);
+    }
+    // 4. S <- S \ T[i]
+    arr_remove(&ev, i);
   }
-  printf("\nhighest: %u\n", highest);
-  arr_free(&cand);
-  arr_print(ev);
   return ev;
 }
 

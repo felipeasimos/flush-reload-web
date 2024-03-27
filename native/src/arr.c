@@ -33,6 +33,13 @@ void* arr_pop(Arr* arr) {
   return p;
 }
 
+void arr_remove(Arr* arr, unsigned int idx) {
+  // swap with final index
+  arr->arr[idx] = arr->arr[arr->len - 1];
+  // truncate
+  arr->arr = realloc(arr->arr, sizeof(void*) * (--arr->len));
+}
+
 void* arr_peek(Arr* arr) {
   if(!arr->len) return NULL;
   return arr->arr[arr->len-1];
@@ -49,6 +56,29 @@ Arr* arr_append(Arr* a, Arr* b) {
   memcpy(a->arr + a->len, b->arr, b->len * sizeof(void*));
   a->len = new_len;
   return a;
+}
+
+void* to_linked_list(Arr* set) {
+  if(!set->len) return NULL;
+  void** pointer = &set->arr[0];
+  for(unsigned int i = 1; i < set->len; i++) {
+    *pointer = set->arr[i];
+    pointer = set->arr[i];
+  }
+  *pointer = NULL;
+  return set->arr[0];
+}
+
+void* to_linked_list_without(Arr* set, unsigned int idx) {
+  if(!set->len) return NULL;
+  void** pointer = &set->arr[0];
+  for(unsigned int i = 1; i < set->len; i++) {
+    if(i == idx) i++;
+    *pointer = set->arr[i];
+    pointer = set->arr[i];
+  }
+  *pointer = NULL;
+  return set->arr[0];
 }
 
 void arr_print(Arr a) {
