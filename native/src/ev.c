@@ -23,32 +23,30 @@ Arr generate_candidate_set(void* pool) {
   return arr;
 }
 
-uint64_t test_hit_without(Arr* ev, unsigned int without_idx, void* probe, unsigned int threshold) {
-  void* linked_list = to_linked_list_without(ev, without_idx);
+uint64_t test_hit_without_chunk(Arr* ev, unsigned int chunk_idx, void* probe, unsigned int threshold) {
+  void* linked_list = arr_unlink_chunk(ev, CACHE_ASSOCIATIVITY + 1, chunk_idx);
   unsigned int t = 0;
   for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(linked_list, probe);
   t /= ROUNDS_PER_SET;
   // printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
+  arr_link_chunk(ev, CACHE_ASSOCIATIVITY + 1, chunk_idx);
   return threshold < t;
 }
 
 Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
   Arr ev = arr_clone(&cand);
+  arr_to_linked_list(&ev);
   while(ev.len > CACHE_ASSOCIATIVITY) {
     // 1. split
     // 2. set i = 0
     unsigned int i = 0;
     // 3. loop until a miss don't occur for (S \ T[i])
-    for(; !test_hit_without(&ev, i, probe, threshold) && i >= CACHE_ASSOCIATIVITY; i++) {
+    for(; !test_hit_without_chunk(&ev, i, probe, threshold) && i >= CACHE_ASSOCIATIVITY; i++) {
     //    1. increment i
     }
-    printf("ev.len: %u\n", ev.len);
-    if(i >= CACHE_ASSOCIATIVITY) {
-      printf("wtf\n");
-      exit(1);
-    }
+    // printf("ev.len: %u\n", ev.len);
     // 4. S <- S \ T[i]
-    arr_remove(&ev, i);
+    arr_remove_chunk(&ev, CACHE_ASSOCIATIVITY + 1, i);
   }
   return ev;
 }

@@ -12,7 +12,6 @@
 #include "arr.h"
 #include "fr.h"
 
-void* to_linked_list(Arr* set);
 Arr generate_candidate_set(void* pool);
 Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold);
 Arr generate_conflict_set(Arr* evs, unsigned long nevs);

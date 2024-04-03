@@ -58,30 +58,53 @@ Arr* arr_append(Arr* a, Arr* b) {
   return a;
 }
 
-void* to_linked_list(Arr* set) {
-  if(!set->len) return NULL;
-  void** pointer = &set->arr[0];
-  for(unsigned int i = 1; i < set->len; i++) {
-    *pointer = set->arr[i];
-    pointer = set->arr[i];
-  }
-  *pointer = NULL;
-  return set->arr[0];
-}
-
-void* to_linked_list_without(Arr* set, unsigned int idx) {
-  if(!set->len) return NULL;
-  void** pointer = &set->arr[0];
-  for(unsigned int i = 1; i < set->len; i++) {
-    if(i == idx) i++;
-    *pointer = set->arr[i];
-    pointer = set->arr[i];
-  }
-  *pointer = NULL;
-  return set->arr[0];
-}
-
 void arr_print(Arr a) {
   for(unsigned int i = 0; i < a.len; i++) printf("%p ", a.arr[i]);
   printf("\n");
+}
+
+void* arr_to_linked_list(Arr* set) {
+  if(!set->len) return NULL;
+  void** pointer = &set->arr[0];
+  for(unsigned int i = 1; i < set->len; i++) {
+    *pointer = set->arr[i];
+    pointer = set->arr[i];
+  }
+  *pointer = NULL;
+  return set->arr[0];
+}
+
+#define MIN(a, b) a < b ? a : b;
+void* arr_unlink_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
+  nchunks = MIN(arr->len, nchunks);
+  unsigned int chunk_size = arr->len / nchunks;
+  // if first chunk, return second chunk head
+  if(!chunk_idx) return arr->arr[chunk_size];
+  void** pointer = arr->arr[(chunk_size * chunk_idx) - 1];
+  // if its the last one, set second last chunk tail to NULL
+  *pointer = chunk_idx == nchunks - 1 ? NULL : arr->arr[chunk_size * chunk_idx];
+  return arr->arr[0];
+}
+
+// link back an unlinked chunk
+void arr_link_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
+  nchunks = MIN(arr->len, nchunks);
+  unsigned int chunk_size = arr->len / nchunks;
+  // if first chunk, return first address
+  if(!chunk_idx) return;
+  void** pointer = arr->arr[(chunk_size * chunk_idx) - 1];
+  *pointer = arr->arr[chunk_size * chunk_idx];
+}
+
+// remove addresses based on chunk (linked list is not accessed)
+void arr_remove_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
+  nchunks = MIN(arr->len, nchunks);
+  unsigned int chunk_size = arr->len / nchunks;
+  unsigned int chunk_end = chunk_size * (chunk_idx + 1);
+  // move elements after chunk into it
+  for(unsigned int i = chunk_end; i < arr->len; i += chunk_size) {
+    unsigned int current_chunk_size = MIN(chunk_size, arr->len - i);
+    memcpy(&arr->arr[i+1], &arr->arr[i], sizeof(void*) * current_chunk_size);
+  }
+  arr->len -= chunk_idx == nchunks - 1 ? (arr->len - (nchunks * chunk_size)) : chunk_size;
 }
