@@ -12,6 +12,10 @@ typedef struct Config {
   uint64_t time_slots;
   uint64_t time_slot_size;
   size_t num_addrs;
+  void* candidate_pool;
+  uint64_t num_measurements;
+  uint64_t num_candidates;
+  uint64_t stride;
 
   struct stat file_stat;
   int fd;

@@ -5,21 +5,46 @@
 #include <stdlib.h>
 
 #include <stdio.h>
-Arr generate_candidate_set(void* pool) {
+#include <sys/mman.h>
+
+Arr generate_candidate_set(Config* config, void* retry_target) {
   srand(time(0));
-  Arr arr = {
-    .len = NUMBER_OF_CANDIDATES,
-    .arr = calloc(NUMBER_OF_CANDIDATES, sizeof(void*))
-  };
-  // populate array of candidate indices
-  for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = pool + ((i * STRIDE));
-  // swap indices around
-  for(unsigned int i = 0; i < arr.len; i++) {
-    unsigned int to_swap = rand() % arr.len;
-    void* tmp = arr.arr[i];
-    arr.arr[i] = arr.arr[to_swap];
-    arr.arr[to_swap] = tmp;
-  }
+  const size_t pool_size = config->num_candidates * config->stride;
+  uint8_t evicted = 0;
+  Arr arr;
+  do {
+    config->candidate_pool = mmap(
+      NULL,
+      pool_size,
+      PROT_READ | PROT_WRITE,
+      MAP_PRIVATE | MAP_ANONYMOUS,
+      -1,
+      0
+    );
+    arr = arr_init(config->num_candidates);
+    // populate array of candidate indices
+    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + ((i * config->stride));
+    // swap indices around
+    for(unsigned int i = 0; i < arr.len; i++) {
+      unsigned int to_swap = rand() % arr.len;
+      void* tmp = arr.arr[i];
+      arr.arr[i] = arr.arr[to_swap];
+      arr.arr[to_swap] = tmp;
+    }
+    arr_to_linked_list(&arr);
+    // validate
+    if(retry_target) {
+      unsigned int t = 0;
+      for(unsigned int i = 0; i < config->num_measurements; i++) {
+        t += timed_miss(arr.arr[0], retry_target);
+      }
+      evicted = config->threshold < (t / config->num_measurements);
+      if(!evicted) {
+        arr_free(&arr);
+        munmap(config->candidate_pool, pool_size);
+      }
+    }
+  } while(retry_target && !evicted);
   return arr;
 }
 

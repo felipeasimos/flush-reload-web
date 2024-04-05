@@ -7,7 +7,7 @@
 #define BUFFER_SIZE 4096
 
 void usage() {
-  printf("usage: fr FILE TIME_SLOTS WAIT_CYCLES [OFFSETS...]\n");
+  printf("usage: CONFIG_FILE\n");
 }
 
 #define CHECK_IF_FIELD(field) strncmp(field, buf, size) == 0
@@ -48,6 +48,10 @@ int parse_config(int argc, char** argv, Config* config) {
     PARSE(threshold, "%lu", (unsigned long*));
     PARSE(time_slots, "%lu", (unsigned long*));
     PARSE(time_slot_size, "%lu", (unsigned long*));
+    PARSE(stride, "%lu", (unsigned long*));
+    PARSE(num_candidates, "%lu", (unsigned long*));
+    PARSE(num_measurements, "%lu", (unsigned long*));
+    // PARSE(candidate_pool, "%p", (void**));
     if( CHECK_IF_FIELD("probe") ) {
       config->addrs = realloc(config->addrs, (++config->num_addrs) * sizeof(void*));
       SSCANF(addrs[config->num_addrs-1], "%lX", (unsigned long*));

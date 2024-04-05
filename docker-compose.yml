@@ -1,0 +1,8 @@
+services:
+  fr:
+    build: .
+    command: "make evset"
+    volumes: 
+      - ./data:/app/data
+    ports:
+      - "8000:8000"

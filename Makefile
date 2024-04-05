@@ -5,6 +5,10 @@ run-docker-native: build-docker
 	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack build-bento parse compare && bash"
 run-docker-web: build-docker
 	docker run -it --rm -p 8000:8000 -v $$(pwd)/data:/app/data --name "fr" fr
+run-docker-evset:
+	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make evset && bash"
+evset:
+	$(MAKE) -C native evset
 serve:
 	$(MAKE) -C web serve
 objdump:

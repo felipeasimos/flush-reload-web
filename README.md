@@ -178,3 +178,13 @@ Whether it is Rust (without `wasm_bindgen`), C or C++, the underlying LLVM IR is
 ```
 
 `__data_end` and `__heap_base` are exported by the webassembly module.
+
+## Finding Eviction sets
+
+0. choose a threshold, compare to `clflush` or analyse timings manually to choose one
+1. start from candidate set, which probably evicts the target if big enough
+    * if it doesn't evict (according to choosen threshold), try another one automatically
+2. reduce it to an optimal eviction set
+    * group threshold testing!
+        * reduce big slices of the set (backtracking)
+            * if this actually fails (idk, because of noise), revert to previously working solution
