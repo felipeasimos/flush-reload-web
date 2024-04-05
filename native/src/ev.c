@@ -55,22 +55,34 @@ uint64_t test_hit_without_chunk(Arr* ev, unsigned int chunk_idx, void* probe, un
   t /= ROUNDS_PER_SET;
   // printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
   arr_link_chunk(ev, CACHE_ASSOCIATIVITY + 1, chunk_idx);
-  return threshold < t;
+  return t < threshold;
 }
 
 Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
   Arr ev = arr_clone(&cand);
+  Arr last_working_ev = arr_clone(&ev);
   arr_to_linked_list(&ev);
   while(ev.len > CACHE_ASSOCIATIVITY) {
     // 1. split
     // 2. set i = 0
     unsigned int i = 0;
     // 3. loop until a miss don't occur for (S \ T[i])
-    for(; !test_hit_without_chunk(&ev, i, probe, threshold) && i >= CACHE_ASSOCIATIVITY; i++) {
+    for(; !test_hit_without_chunk(&ev, i, probe, threshold) && i < CACHE_ASSOCIATIVITY + 1; i++) {
     //    1. increment i
+    }
+    // check if we need to backtrack
+    if(i == CACHE_ASSOCIATIVITY + 1) {
+      // check if we haven't already backtracked
+      if(last_working_ev.len == ev.len) {
+      } else {
+        ev = last_working_ev;
+        arr_to_linked_list(&ev);
+        continue;
+      }
     }
     // printf("ev.len: %u\n", ev.len);
     // 4. S <- S \ T[i]
+    last_working_ev = arr_clone(&ev);
     arr_remove_chunk(&ev, CACHE_ASSOCIATIVITY + 1, i);
   }
   return ev;
