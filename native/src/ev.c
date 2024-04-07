@@ -40,6 +40,8 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
       }
       evicted = config->threshold < (t / config->num_measurements);
       if(!evicted) {
+        printf(".");
+        fflush(stdout);
         arr_free(&arr);
         munmap(config->candidate_pool, pool_size);
       }
@@ -53,7 +55,6 @@ uint64_t test_hit_without_chunk(Arr* ev, unsigned int chunk_idx, void* probe, un
   unsigned int t = 0;
   for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(linked_list, probe);
   t /= ROUNDS_PER_SET;
-  // printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
   arr_link_chunk(ev, CACHE_ASSOCIATIVITY + 1, chunk_idx);
   return t < threshold;
 }
@@ -80,7 +81,7 @@ Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
         continue;
       }
     }
-    // printf("ev.len: %u\n", ev.len);
+    printf("ev.len: %u\n", ev.len);
     // 4. S <- S \ T[i]
     last_working_ev = arr_clone(&ev);
     arr_remove_chunk(&ev, CACHE_ASSOCIATIVITY + 1, i);

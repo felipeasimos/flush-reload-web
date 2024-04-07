@@ -13,6 +13,6 @@ probe: build-probe
 find-threshold: build-finder
 	./threshold_finder
 build-evset:
-	gcc src/ev.c src/config.c src/arr.c src/ev_main.c -O0 -o evset
+	gcc src/ev.c src/config.c src/arr.c src/ev_main.c -O2 -o evset
 evset: build-evset
 	./evset ../gpg/gpg-native.probe
