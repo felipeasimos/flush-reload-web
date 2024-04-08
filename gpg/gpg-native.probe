@@ -7,6 +7,7 @@ target_file ../data/gpg
 num_measurements 200
 stride 4096
 num_candidates 3500
+num_backtracks 20
 probe 0x9c681
 probe 0x9b597
 probe 0x9c182

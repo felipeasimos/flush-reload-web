@@ -15,6 +15,7 @@ typedef struct Config {
   void* candidate_pool;
   uint64_t num_measurements;
   uint64_t num_candidates;
+  uint64_t num_backtracks;
   uint64_t stride;
 
   struct stat file_stat;

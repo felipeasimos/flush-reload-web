@@ -51,6 +51,7 @@ int parse_config(int argc, char** argv, Config* config) {
     PARSE(stride, "%lu", (unsigned long*));
     PARSE(num_candidates, "%lu", (unsigned long*));
     PARSE(num_measurements, "%lu", (unsigned long*));
+    PARSE(num_backtracks, "%lu", (unsigned long*));
     // PARSE(candidate_pool, "%p", (void**));
     if( CHECK_IF_FIELD("probe") ) {
       config->addrs = realloc(config->addrs, (++config->num_addrs) * sizeof(void*));

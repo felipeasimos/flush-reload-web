@@ -50,42 +50,41 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
   return arr;
 }
 
-uint64_t test_hit_without_chunk(Arr* ev, unsigned int chunk_idx, void* probe, unsigned int threshold) {
-  void* linked_list = arr_unlink_chunk(ev, CACHE_ASSOCIATIVITY + 1, chunk_idx);
+uint64_t test_hit_without_chunk(Arr* ev, Arr* removed_chunks, unsigned int chunk_idx, void* probe, unsigned int threshold) {
+  arr_unlink_chunk(ev, removed_chunks, CACHE_ASSOCIATIVITY + 1, chunk_idx);
   unsigned int t = 0;
-  for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(linked_list, probe);
+  for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(ev->arr[0], probe);
   t /= ROUNDS_PER_SET;
-  arr_link_chunk(ev, CACHE_ASSOCIATIVITY + 1, chunk_idx);
+  arr_relink_chunk(ev, removed_chunks, CACHE_ASSOCIATIVITY + 1);
   return t < threshold;
 }
 
 Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold) {
   Arr ev = arr_clone(&cand);
-  Arr last_working_ev = arr_clone(&ev);
+  // store index of head and tail of each deleted chunk
+  Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);
   while(ev.len > CACHE_ASSOCIATIVITY) {
     // 1. split
     // 2. set i = 0
     unsigned int i = 0;
     // 3. loop until a miss don't occur for (S \ T[i])
-    for(; !test_hit_without_chunk(&ev, i, probe, threshold) && i < CACHE_ASSOCIATIVITY + 1; i++) {
-    //    1. increment i
+    for(; !test_hit_without_chunk(&ev, &removed_chunks, i, probe, threshold) && i < CACHE_ASSOCIATIVITY + 1; i++) {
+      //    1. increment i
     }
     // check if we need to backtrack
     if(i == CACHE_ASSOCIATIVITY + 1) {
-      // check if we haven't already backtracked
-      if(last_working_ev.len == ev.len) {
-      } else {
-        ev = last_working_ev;
-        arr_to_linked_list(&ev);
-        continue;
-      }
+
     }
     printf("ev.len: %u\n", ev.len);
     // 4. S <- S \ T[i]
-    last_working_ev = arr_clone(&ev);
     arr_remove_chunk(&ev, CACHE_ASSOCIATIVITY + 1, i);
   }
+  for(unsigned int i = 0; i < removed_chunks.len; i++) {
+    arr_free(removed_chunks.arr[i]);
+    free(removed_chunks.arr[i]);
+  }
+  arr_free(&removed_chunks);
   return ev;
 }
 

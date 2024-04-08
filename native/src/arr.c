@@ -74,37 +74,47 @@ void* arr_to_linked_list(Arr* set) {
   return set->arr[0];
 }
 
-#define MIN(a, b) a < b ? a : b;
-void* arr_unlink_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
-  nchunks = MIN(arr->len, nchunks);
-  unsigned int chunk_size = arr->len / nchunks;
-  // if first chunk, return second chunk head
-  if(!chunk_idx) return arr->arr[chunk_size];
-  void** pointer = arr->arr[(chunk_size * chunk_idx) - 1];
-  // if its the last one, set second last chunk tail to NULL
-  *pointer = chunk_idx == nchunks - 1 ? NULL : arr->arr[chunk_size * chunk_idx];
-  return arr->arr[0];
-}
-
-// link back an unlinked chunk
-void arr_link_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
-  nchunks = MIN(arr->len, nchunks);
-  unsigned int chunk_size = arr->len / nchunks;
-  // if first chunk, return first address
-  if(!chunk_idx) return;
-  void** pointer = arr->arr[(chunk_size * chunk_idx) - 1];
-  *pointer = arr->arr[chunk_size * chunk_idx];
-}
-
-// remove addresses based on chunk (linked list is not accessed)
 void arr_remove_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
   nchunks = MIN(arr->len, nchunks);
   unsigned int chunk_size = arr->len / nchunks;
-  unsigned int chunk_end = chunk_size * (chunk_idx + 1);
+  unsigned int chunk_end = ARR_GET_CHUNK_HEAD(arr->len, nchunks, chunk_idx+1) - 1;
   // move elements after chunk into it
   for(unsigned int i = chunk_end; i < arr->len; i += chunk_size) {
     unsigned int current_chunk_size = MIN(chunk_size, arr->len - i);
     memcpy(&arr->arr[i+1], &arr->arr[i], sizeof(void*) * current_chunk_size);
   }
   arr->len -= chunk_idx == nchunks - 1 ? (arr->len - (nchunks * chunk_size)) : chunk_size;
+}
+
+void arr_unlink_chunk(Arr* ev, Arr* unlinked_chunks, unsigned int nchunks, unsigned int chunk_idx) {
+  nchunks = MIN(ev->len, nchunks);
+  unsigned int chunk_size = ev->len / nchunks;
+  unsigned int this_chunk_size = chunk_idx == (nchunks - 1) ? ev->len - ((nchunks-1) * chunk_size) : chunk_size;
+  // copy chunk to unlinked_chunks
+  Arr* chunk = malloc(sizeof(Arr));
+  *chunk = arr_init(this_chunk_size);
+  arr_push(unlinked_chunks, chunk);
+  memcpy(chunk->arr, ev->arr + (chunk_size * chunk_idx), this_chunk_size * sizeof(void*));
+  // skip this chunk
+  if(chunk_idx != 0) {
+    void** head_prev = ev->arr[ARR_GET_CHUNK_HEAD(ev->len, nchunks, chunk_idx) - 1];
+    *head_prev = ev->arr[ARR_GET_CHUNK_HEAD(ev->len, nchunks, chunk_idx+1)];
+    void** tail = chunk->arr[chunk->len - 1];
+    *tail = NULL;
+  }
+  // remove chunk from ev
+  arr_remove_chunk(ev, nchunks, chunk_idx);
+}
+
+// relink last chunk in removed_chunks
+void arr_relink_chunk(Arr* ev, Arr* unlinked_chunks, unsigned int nchunks) {
+  Arr* chunk = arr_pop(unlinked_chunks);
+  void** tail = chunk->arr[chunk->len - 1];
+  *tail = ev->arr[0];
+  ev->arr = realloc(ev->arr, (ev->len + chunk->len) * sizeof(void*));
+  memmove(ev->arr + chunk->len, ev->arr, ev->len * sizeof(void*));
+  memcpy(ev->arr, chunk->arr, chunk->len * sizeof(void*));
+  ev->len += chunk->len;
+  arr_free(chunk);
+  free(chunk);
 }
