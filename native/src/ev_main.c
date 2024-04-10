@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   Arr candidates = generate_candidate_set(&config, config.mmap_base);
   printf("generated candidate set\n");
   // 2. generate candidate set
-  Arr ev = generate_eviction_set(config.mmap_base, candidates, config.threshold);
+  Arr ev = generate_eviction_set(config.mmap_base, candidates, config.threshold, config.num_backtracks);
   printf("generated eviction set\n");
   arr_to_linked_list(&ev);
   const unsigned int total = 1000;
@@ -23,6 +23,8 @@ int main(int argc, char** argv) {
     printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
     fail += t < config.threshold;
   }
+  printf("fail: %u\n", fail);
+  printf("total: %u\n", total);
   printf("\nerror: %f\n", (float)fail / (float)total);
 
   return 0;

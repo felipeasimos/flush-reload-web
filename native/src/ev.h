@@ -12,7 +12,7 @@
 
 // set 'retry_target' to NULL if you don't want to retry
 Arr generate_candidate_set(Config* config, void* retry_target);
-Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold);
+Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold, unsigned int num_backtracks);
 Arr generate_conflict_set(Arr* evs, unsigned long nevs);
 
 static inline __attribute__((always_inline)) void traverse(void* evset) {
