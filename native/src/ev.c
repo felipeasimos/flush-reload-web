@@ -59,7 +59,6 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   void* end = ev.arr[ev.len - 1];
   unsigned int backtrack_counter = 0;
   const unsigned int nchunks = CACHE_ASSOCIATIVITY + 1;
-  check(ev, config);
   while(ev.len > CACHE_ASSOCIATIVITY) {
     printf("ev.len: %u\n", ev.len);
     // 1. split
