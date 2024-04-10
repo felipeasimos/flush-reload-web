@@ -24,7 +24,7 @@ typedef struct Config {
 } Config;
 
 int parse_config(int argc, char** argv, Config* config);
-void close_config(Config* config);
+void free_config(Config* config);
 void usage();
 
 #endif

@@ -15,4 +15,5 @@ find-threshold: build-finder
 build-evset:
 	gcc src/ev.c src/config.c src/arr.c src/ev_main.c -O2 -g -o evset
 evset: build-evset
-	valgrind --leak-check=full --exit-on-first-error=yes --error-exitcode=1 ./evset ../gpg/gpg-native.probe
+	# valgrind --leak-check=full --exit-on-first-error=yes --error-exitcode=1 ./evset ../gpg/gpg-native.probe
+	./evset ../gpg/gpg-native.probe

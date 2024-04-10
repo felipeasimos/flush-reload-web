@@ -95,7 +95,7 @@ error:
   return -1;
 }
 
-void close_config(Config* config) {
+void free_config(Config* config) {
   if(config->fd) {
     close(config->fd);
   }

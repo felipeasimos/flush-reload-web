@@ -50,25 +50,32 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
   return arr;
 }
 
-Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold, unsigned int num_backtracks) {
+Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   Arr ev = arr_clone(&cand);
   // store index of head and tail of each deleted chunk
   Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);
+  void* start = ev.arr[0];
+  void* end = ev.arr[ev.len - 1];
   unsigned int backtrack_counter = 0;
+  const unsigned int nchunks = CACHE_ASSOCIATIVITY + 1;
+  check(ev, config);
   while(ev.len > CACHE_ASSOCIATIVITY) {
+    printf("ev.len: %u\n", ev.len);
     // 1. split
     // 2. set i = 0
     uint8_t found = 0;
     unsigned int i = 0;
     // 3. loop until a miss don't occur for (S \ T[i])
-    for(; i < (CACHE_ASSOCIATIVITY +1 ); i++) {  
-      arr_unlink_chunk(&ev, &removed_chunks, CACHE_ASSOCIATIVITY + 1, i);
+    for(; i < nchunks; i++) {
+      arr_unlink_chunk(&ev, &removed_chunks, nchunks, i);
+      printf("check after unlink (%u):\n", i);
       unsigned int t = 0;
       for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(ev.arr[0], probe);
       t /= ROUNDS_PER_SET;
-      if(t < threshold) {
-        arr_relink_chunk(&ev, &removed_chunks, (CACHE_ASSOCIATIVITY + 1));
+      if(t < config->threshold) {
+        arr_relink_chunk(&ev, &removed_chunks, nchunks);
+        printf("check after relink (%u):\n", i);
       } else {
         found = 1;
         break;
@@ -77,14 +84,14 @@ Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold, unsigne
     // check if we need to backtrack
     if(!found) {
       backtrack_counter++;
-      if(backtrack_counter < num_backtracks) {
-        arr_relink_chunk(&ev, &removed_chunks, CACHE_ASSOCIATIVITY + 1);
+      if(backtrack_counter < config->num_backtracks) {
+        arr_relink_chunk(&ev, &removed_chunks, nchunks);
         if(removed_chunks.len == 0) break;
       } else {
         while(removed_chunks.len > 0) { 
-          arr_relink_chunk(&ev, &removed_chunks, CACHE_ASSOCIATIVITY + 1);
+          arr_relink_chunk(&ev, &removed_chunks, nchunks);
         }
-        break;;
+        break;
       }
     }
     // 4. S <- S \ T[i]

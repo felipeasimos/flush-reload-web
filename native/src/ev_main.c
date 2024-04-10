@@ -1,4 +1,5 @@
 #include "arr.h"
+#include "config.h"
 #include "ev.h"
 #include <stdio.h>
 
@@ -13,9 +14,8 @@ int main(int argc, char** argv) {
   Arr candidates = generate_candidate_set(&config, config.mmap_base);
   printf("generated candidate set\n");
   // 2. generate candidate set
-  Arr ev = generate_eviction_set(config.mmap_base, candidates, config.threshold, config.num_backtracks);
+  Arr ev = generate_eviction_set(&config, config.mmap_base, candidates);
   printf("generated eviction set\n");
-  arr_to_linked_list(&ev);
   const unsigned int total = 1000;
   unsigned int fail = 0;
   for(unsigned int i = 0; i < total; i++) {
@@ -26,6 +26,9 @@ int main(int argc, char** argv) {
   printf("fail: %u\n", fail);
   printf("total: %u\n", total);
   printf("\nerror: %f\n", (float)fail / (float)total);
+  free_config(&config);
+  arr_free(&candidates);
+  arr_free(&ev);
 
   return 0;
 }

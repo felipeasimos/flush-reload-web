@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
     fprintf(report, "\n");
   }
   fclose(report);
-  close_config(&config);
+  free_config(&config);
   return 0;
 report_error:
   fclose(report);

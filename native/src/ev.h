@@ -12,7 +12,7 @@
 
 // set 'retry_target' to NULL if you don't want to retry
 Arr generate_candidate_set(Config* config, void* retry_target);
-Arr generate_eviction_set(void* probe, Arr cand, unsigned int threshold, unsigned int num_backtracks);
+Arr generate_eviction_set(Config* config, void* probe, Arr cand);
 Arr generate_conflict_set(Arr* evs, unsigned long nevs);
 
 static inline __attribute__((always_inline)) void traverse(void* evset) {
@@ -31,7 +31,6 @@ static inline __attribute__((always_inline)) void traverse(void* evset) {
 static inline __attribute__((always_inline)) uint64_t timed_miss(void* evset, uint8_t* p) {
   access_addr(p);
   traverse(evset);
-  // while(evset) evset = *(void**)evset;
   uint64_t t0 = rdtscp();
   access_addr(p);
   return rdtscp() - t0;
