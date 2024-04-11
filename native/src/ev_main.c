@@ -21,19 +21,24 @@ int main(int argc, char** argv) {
     Arr candidates = generate_candidate_set(&config, config.mmap_base);
     // 2. generate candidate set
     Arr ev = generate_eviction_set(&config, config.mmap_base, candidates);
+    while(ev.len != CACHE_ASSOCIATIVITY) {
+      arr_free(&ev);
+      ev = generate_eviction_set(&config, config.mmap_base, candidates);
+    }
+    printf("ev.len: %u\n", ev.len);
     const unsigned int total = 100000;
     unsigned int fail = 0;
 
     for(unsigned int i = 0; i < total; i++) {
-      // unsigned int t = timed_miss(ev.arr[0], config.mmap_base);
-      unsigned int t = 
+      unsigned int t = timed_miss(ev.arr[0], config.mmap_base);
+      // unsigned int t = 
       // printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
       fail += (t < config.threshold);
     }
     float current_percentage = (float)fail / (float)total;
     printf("current error(%u): %f\n", j, current_percentage);
     percentage += current_percentage;
-    printf("total percentage: %f\n", percentage / 100);
+    printf("running error: %f\n", percentage / (j+1));
     arr_free(&candidates);
     arr_free(&ev);
   }
