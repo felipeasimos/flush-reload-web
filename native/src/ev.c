@@ -7,14 +7,19 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-Arr generate_candidate_set(Config* config, void* retry_target) {
+void free_candidate_pool(Config* config, void** pool) {
+  munmap(pool, config->num_candidates * config->page_size);
+  *pool = NULL;
+}
+
+Arr generate_candidate_set(Config* config, void* target, void** pool) {
   srand(time(0));
   const size_t pool_size = config->num_candidates * config->page_size;
-  unsigned int offset = ((unsigned long)(retry_target) & (config->page_size-1));
+  unsigned int offset = ((unsigned long)(target) & (config->page_size-1));
   uint8_t evicted = 0;
   Arr arr;
   do {
-    config->candidate_pool = mmap(
+    *pool = mmap(
       NULL,
       pool_size,
       PROT_READ | PROT_WRITE,
@@ -24,7 +29,7 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
     );
     arr = arr_init(config->num_candidates);
     // populate array of candidate indices
-    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + (i * config->page_size) + offset;
+    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = (*pool) + (i * config->page_size) + offset;
     // swap indices around
     for(unsigned int i = 0; i < arr.len; i++) {
       unsigned int to_swap = rand() % arr.len;
@@ -34,32 +39,30 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
     }
     arr_to_linked_list(&arr);
     // validate
-    if(retry_target) {
+    if(target) {
       unsigned int t = 0;
       for(unsigned int i = 0; i < config->num_measurements; i++) {
-        t += timed_miss(arr.arr[0], retry_target);
+        t += timed_miss(arr.arr[0], target);
       }
       evicted = config->threshold < (t / config->num_measurements);
       if(!evicted) {
         printf(".");
         fflush(stdout);
         arr_free(&arr);
-        munmap(config->candidate_pool, pool_size);
+        munmap(*pool, pool_size);
       }
     }
-  } while(retry_target && !evicted);
-  // remove offset
-  for(unsigned int i = 0; i < arr.len; i++) arr.arr[i] -= offset;
+  } while(target && !evicted);
   return arr;
 }
 
-void check(Arr ev, Config* config) {
+void check(Arr ev, Config* config, void* pool) {
 
   unsigned int num_nulls = 0;
   unsigned int not_a_candidate = 0;
   unsigned int copy = 0;
-  void* start = config->candidate_pool;
-  void* end = config->candidate_pool + (config->num_candidates * config->page_size * sizeof(void*));
+  void* start = pool;
+  void* end = pool + (config->num_candidates * config->page_size * sizeof(void*));
   for(unsigned int i = 0; i < ev.len; i++) {
     void* pointer = *(void**)ev.arr[i];
     if((pointer > end || pointer < start)) {
@@ -89,7 +92,7 @@ void check(Arr ev, Config* config) {
 Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   Arr ev = arr_clone(&cand);
   // set bits contained in the page offset must be equal in the candidates and probes
-  for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & (config->page_size-1));
+  // for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & (config->page_size-1));
   // store index of head and tail of each deleted chunk
   Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);
@@ -138,8 +141,6 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
         break;
       }
     }
-    // 4. S <- S \ T[i]
-    // arr_unlink_chunk(&ev, &removed_chunks, CACHE_ASSOCIATIVITY + 1, i);
   }
   for(unsigned int i = 0; i < removed_chunks.len; i++) {
     arr_free(removed_chunks.arr[i]);

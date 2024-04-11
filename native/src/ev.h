@@ -9,8 +9,8 @@
 #include "fr.h"
 #include "config.h"
 
-// set 'retry_target' to NULL if you don't want to retry
-Arr generate_candidate_set(Config* config, void* retry_target);
+void free_candidate_pool(Config* config, void** pool);
+Arr generate_candidate_set(Config* config, void* target, void** pool);
 Arr generate_eviction_set(Config* config, void* probe, Arr cand);
 Arr generate_conflict_set(Arr* evs, unsigned long nevs);
 

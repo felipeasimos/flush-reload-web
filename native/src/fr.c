@@ -71,33 +71,40 @@ int main(int argc, char **argv) {
   }
 
 #if defined(WITH_EV) && WITH_EV
-  Arr candidates = generate_candidate_set(&config, config.addrs[0]);
-
+  void* pools[config.num_addrs];
+  Arr candidates[config.num_addrs];
   Arr ev_sets[config.num_addrs];
   for (unsigned int i = 0; i < config.num_addrs; i++) {
-    ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates);
+    candidates[i] = generate_candidate_set(&config, config.addrs[i], &pools[i]);
+    ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates[i]);
     while(ev_sets[i].len != CACHE_ASSOCIATIVITY) {
       arr_free(&ev_sets[i]);
-      ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates);
+      ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates[i]);
     }
     printf("ev.len[%d]: %u\n", i, ev_sets[i].len);
   }
-  arr_free(&candidates);
+  for(unsigned int i = 0; i < config.num_addrs; i++) {
+    arr_free(&candidates[i]);
+  }
   Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
   printf("conflict set len: %u\n", conflict_set.len);
-  unsigned t_hit = 0;
-  for (unsigned int j = 0; j < 1000; j++) {
-    for (unsigned int i = 0; i < config.num_addrs; i++) {
-      t_hit += timed_hit(config.addrs[i]);
+  for (unsigned int i = 0; i < config.num_addrs; i++) {
+    unsigned int t_hit = 0;
+    for (unsigned int j = 0; j < 1000; j++) {
+      t_hit+= timed_hit(config.addrs[i]);
     }
+    printf("timed_hit avg[%d]: %u\n", i, t_hit / 1000);
   }
-  printf("timed_hit avg: %u\n", t_hit / 3000);
   for (unsigned int i = 0; i < config.num_addrs; i++) {
     unsigned int t_miss = 0;
     for (unsigned int j = 0; j < 1000; j++) {
+      // t_miss += timed_miss(ev_sets[i].arr[0], config.addrs[i]);
       t_miss += timed_miss(conflict_set.arr[0], config.addrs[i]);
     }
     printf("timed_miss avg[%d]: %u\n", i, t_miss / 1000);
+  }
+  for(unsigned int i = 0; i < config.num_addrs; i++) {
+    free_candidate_pool(&config, &pools[i]);
   }
 #endif
 
