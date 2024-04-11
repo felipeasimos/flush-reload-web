@@ -48,7 +48,7 @@ int parse_config(int argc, char** argv, Config* config) {
     PARSE(threshold, "%lu", (unsigned long*));
     PARSE(time_slots, "%lu", (unsigned long*));
     PARSE(time_slot_size, "%lu", (unsigned long*));
-    PARSE(stride, "%lu", (unsigned long*));
+    PARSE(page_size, "%lu", (unsigned long*));
     PARSE(num_candidates, "%lu", (unsigned long*));
     PARSE(num_measurements, "%lu", (unsigned long*));
     PARSE(num_backtracks, "%lu", (unsigned long*));
@@ -97,7 +97,7 @@ error:
 
 void free_config(Config* config) {
   if(config->mmap_base) munmap(config->mmap_base, config->file_stat.st_size);
-  if(config->candidate_pool) munmap(config->candidate_pool, config->num_candidates * config->stride);
+  if(config->candidate_pool) munmap(config->candidate_pool, config->num_candidates * config->page_size);
   if(config->fd) {
     close(config->fd);
   }

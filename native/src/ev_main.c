@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   if (parse_config(argc, argv, &config) == -1) return 1;
   printf("num_measurements: %lu\n", config.num_measurements);
   printf("num_candidates: %lu\n", config.num_candidates);
-  printf("stride: %lu\n", config.stride);
+  printf("page_size: %lu\n", config.page_size);
   float percentage = 0;
   void* target = (void*)(((unsigned long)config.mmap_base + (config.file_stat.st_size / 2)));
   printf("target: %p\n", target);

@@ -9,7 +9,8 @@
 
 Arr generate_candidate_set(Config* config, void* retry_target) {
   srand(time(0));
-  const size_t pool_size = config->num_candidates * config->stride;
+  const size_t pool_size = config->num_candidates * config->page_size;
+  unsigned int offset = ((unsigned long)(retry_target) & 0xfff);
   uint8_t evicted = 0;
   Arr arr;
   do {
@@ -23,7 +24,7 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
     );
     arr = arr_init(config->num_candidates);
     // populate array of candidate indices
-    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + ((i * config->stride));
+    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + (i * config->page_size) + offset;
     // swap indices around
     for(unsigned int i = 0; i < arr.len; i++) {
       unsigned int to_swap = rand() % arr.len;
@@ -56,7 +57,7 @@ void check(Arr ev, Config* config) {
   unsigned int not_a_candidate = 0;
   unsigned int copy = 0;
   void* start = config->candidate_pool;
-  void* end = config->candidate_pool + (config->num_candidates * config->stride * sizeof(void*));
+  void* end = config->candidate_pool + (config->num_candidates * config->page_size * sizeof(void*));
   for(unsigned int i = 0; i < ev.len; i++) {
     void* pointer = *(void**)ev.arr[i];
     if((pointer > end || pointer < start)) {
@@ -85,6 +86,8 @@ void check(Arr ev, Config* config) {
 
 Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   Arr ev = arr_clone(&cand);
+  // set bits contained in the page offset must be equal in the candidates and probes
+  // for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & 0xfff);
   // store index of head and tail of each deleted chunk
   Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);

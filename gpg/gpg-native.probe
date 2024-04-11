@@ -5,7 +5,7 @@ time_slot_size 2000
 # target_file ../gpg/gnupg-1.4.13/g10/gpg
 target_file ../data/gpg
 num_measurements 500
-stride 4096
+page_size 4096
 num_candidates 4000
 num_backtracks 20
 probe 0x9c681
