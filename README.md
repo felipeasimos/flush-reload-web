@@ -192,3 +192,9 @@ Whether it is Rust (without `wasm_bindgen`), C or C++, the underlying LLVM IR is
     * group threshold testing!
         * reduce big slices of the set (backtracking)
             * if this actually fails (idk, because of noise), revert to previously working solution
+
+### Candidate Pool
+
+Assuming a 4K page memory size, and a 64 byte cache line, we control 6 bits of the set index. We need to manually set these to match the target pointer. Having the set index partially set by the page offset means that all relevant candidates in the pool will be a page size apart.
+
+Having multiple targets and one candidate pool means we'll probably have to increase the size of the candidate pool (or use multiple). Usually finding multiple good candidate pools for each target is easier than finding one good candidate pool for all.

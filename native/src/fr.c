@@ -92,13 +92,13 @@ int main(int argc, char **argv) {
     }
   }
   printf("timed_hit avg: %u\n", t_hit / 3000);
-  unsigned int t_miss = 0;
   for (unsigned int i = 0; i < config.num_addrs; i++) {
+    unsigned int t_miss = 0;
     for (unsigned int j = 0; j < 1000; j++) {
       t_miss += timed_miss(conflict_set.arr[0], config.addrs[i]);
     }
+    printf("timed_miss avg[%d]: %u\n", i, t_miss / 1000);
   }
-  printf("timed_miss avg: %u\n", t_miss / 3000);
 #endif
 
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");

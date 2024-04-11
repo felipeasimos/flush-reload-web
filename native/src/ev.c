@@ -10,7 +10,7 @@
 Arr generate_candidate_set(Config* config, void* retry_target) {
   srand(time(0));
   const size_t pool_size = config->num_candidates * config->page_size;
-  unsigned int offset = ((unsigned long)(retry_target) & 0xfff);
+  unsigned int offset = ((unsigned long)(retry_target) & (config->page_size-1));
   uint8_t evicted = 0;
   Arr arr;
   do {
@@ -48,6 +48,8 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
       }
     }
   } while(retry_target && !evicted);
+  // remove offset
+  for(unsigned int i = 0; i < arr.len; i++) arr.arr[i] -= offset;
   return arr;
 }
 
@@ -87,7 +89,7 @@ void check(Arr ev, Config* config) {
 Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   Arr ev = arr_clone(&cand);
   // set bits contained in the page offset must be equal in the candidates and probes
-  // for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & 0xfff);
+  for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & (config->page_size-1));
   // store index of head and tail of each deleted chunk
   Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);

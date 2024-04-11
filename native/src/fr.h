@@ -47,6 +47,7 @@ static inline __attribute__((always_inline)) uint64_t reload(uint8_t* p) {
 
 static inline __attribute__((always_inline)) uint64_t timed_hit(uint8_t* p) {
   access_addr(p);
+  fence();
   return load_time(p);
 }
 
