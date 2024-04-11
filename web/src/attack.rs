@@ -5,6 +5,8 @@ use self::env::{random, timed_access, timed_hit};
 const CACHE_LINE_SIZE: usize = 64;
 const CACHE_ASSOCIATIVITY: usize = 12;
 const BUFFER_SIZE: usize = 20 * 1024;
+const NUM_CANDIDATES: u32 = 4000;
+const STRIDE: u32 = 4096;
 
 mod env {
     mod unsafe_js {
@@ -64,16 +66,10 @@ fn wait(number_of_cycles: u32) {
 pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
     let mut vec: Vec<u32> = vec![0; BUFFER_SIZE / core::mem::size_of::<u32>()];
     let base_ptr = vec.as_ptr() as u32;
-    env::log(base_ptr as u64);
     let mut pointer = indices[0];
-    env::log(123123);
-    env::log(vec.len() as u64);
     for i in 0..indices.len() {
-        env::log(pointer as u64);
         vec[pointer as usize] = indices[i] + base_ptr;
-        env::log(i as u64);
         pointer = vec[indices[i] as usize];
-        env::log(i as u64);
     }
     vec[pointer as usize] = 0x00;
     vec
@@ -81,6 +77,7 @@ pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
 
 #[no_mangle]
 pub fn generate_candidate_set() -> Vec<u32> {
+    //
     let number_of_candidates = BUFFER_SIZE / CACHE_LINE_SIZE;
     let mut candidates: Vec<u32> = (0..number_of_candidates)
         .map(|i| (i * CACHE_LINE_SIZE) as u32)

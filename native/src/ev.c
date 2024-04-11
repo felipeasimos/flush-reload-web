@@ -152,10 +152,12 @@ void merge_eviction_sets(Arr* a, Arr b) {
         // last element won't be a repeat of this value cause
         // every EvSet has unique elements
         a->arr[j] = a->arr[--(a->len)];
-        a->arr = realloc(a->arr, a->len * sizeof(void*));
+        // now repeat j since we don't know the value its in it
+        j--;
       }
     }
   }
+  a->arr = realloc(a->arr, a->len * sizeof(void*));
   arr_free(&b);
 }
 
@@ -163,5 +165,6 @@ Arr generate_conflict_set(Arr* evs, unsigned long nevs) {
   for(unsigned int i = 1; i < nevs; i++) {
     merge_eviction_sets(&evs[0], evs[i]);
   }
+  arr_to_linked_list(&evs[0]);
   return evs[0];
 }
