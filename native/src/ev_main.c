@@ -25,8 +25,7 @@ int main(int argc, char** argv) {
     unsigned int fail = 0;
 
     for(unsigned int i = 0; i < total; i++) {
-      // unsigned int t = timed_miss(ev.arr[0], config.mmap_base);
-      unsigned int t = 
+      unsigned int t = timed_miss(candidates.arr[0], config.mmap_base);
       // printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
       fail += (t < config.threshold);
     }

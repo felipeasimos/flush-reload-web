@@ -71,50 +71,30 @@ int main(int argc, char **argv) {
   }
 
 #if defined(WITH_EV) && WITH_EV
-  void *pool = mmap(NULL, BUFFER_SIZE, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  Arr candidates = generate_candidate_set(pool);
+  Arr candidates = generate_candidate_set(&config, config.addrs[0]);
 
-  Arr ev = generate_eviction_set(config.addrs[0], candidates, config.threshold);
-  void* linked_list = arr_to_linked_list(&ev);
-  // sanity check
-  unsigned int t_hit = 0;
-  for (unsigned int i = 0; i < 1000; i++) {
-    t_hit += timed_hit(config.addrs[0]);
+  Arr ev_sets[config.num_addrs];
+  for (unsigned int i = 0; i < config.num_addrs; i++) {
+    ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates);
+    printf("ev.len[%d]: %u\n", i, ev_sets[i].len);
   }
-  printf("timed_hit avg: %u\n", t_hit / 1000);
+  arr_free(&candidates);
+  Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
+  printf("conflict set len: %u\n", conflict_set.len);
+  unsigned t_hit = 0;
+  for (unsigned int j = 0; j < 1000; j++) {
+    for (unsigned int i = 0; i < config.num_addrs; i++) {
+      t_hit += timed_hit(config.addrs[i]);
+    }
+  }
+  printf("timed_hit avg: %u\n", t_hit / 3000);
   unsigned int t_miss = 0;
-  for (unsigned int i = 0; i < 1000; i++) {
-    t_miss += timed_miss(linked_list, config.addrs[0]);
+  for (unsigned int i = 0; i < config.num_addrs; i++) {
+    for (unsigned int j = 0; j < 1000; j++) {
+      t_miss += timed_miss(conflict_set.arr[0], config.addrs[i]);
+    }
   }
-  printf("timed_miss avg: %u\n", t_miss / 1000);
-
-  // Arr ev_sets[config.num_addrs];
-  // for (unsigned int i = 0; i < config.num_addrs; i++) {
-  //   ev_sets[i] = generate_eviction_set(config.addrs[i], candidates, config.threshold);
-  //   if(ev_sets[i].len == 0) {
-  //     printf("ev_sets[i].len is 0\n");
-  //     exit(1);
-  //   }
-  // }
-  // arr_free(&candidates);
-  // Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
-  // unsigned t_hit = 0;
-  // for (unsigned int j = 0; j < 1000; j++) {
-  //   for (unsigned int i = 0; i < config.num_addrs; i++) {
-  //     t_hit += timed_hit(config.addrs[i]);
-  //   }
-  // }
-  // printf("timed_hit avg: %u\n", t_hit / 3000);
-  // unsigned int t_miss = 0;
-  // for (unsigned int i = 0; i < config.num_addrs; i++) {
-  //   void* linked_list = arr_to_linked_list(&ev_sets[i]);
-  //   for (unsigned int j = 0; j < 1000; j++) {
-  //     t_miss += timed_miss(linked_list, config.addrs[i]);
-  //   }
-  // }
-  // printf("timed_miss avg: %u\n", t_miss / 3000);
-  munmap(pool, BUFFER_SIZE);
+  printf("timed_miss avg: %u\n", t_miss / 3000);
 #endif
 
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
