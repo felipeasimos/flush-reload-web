@@ -3,7 +3,6 @@
 
 #define CACHE_LINE_SIZE 64
 #define CACHE_ASSOCIATIVITY 12
-#define ROUNDS_PER_SET 100
 
 #include <stdint.h>
 #include "arr.h"

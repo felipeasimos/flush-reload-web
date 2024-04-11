@@ -50,6 +50,39 @@ Arr generate_candidate_set(Config* config, void* retry_target) {
   return arr;
 }
 
+void check(Arr ev, Config* config) {
+
+  unsigned int num_nulls = 0;
+  unsigned int not_a_candidate = 0;
+  unsigned int copy = 0;
+  void* start = config->candidate_pool;
+  void* end = config->candidate_pool + (config->num_candidates * config->stride * sizeof(void*));
+  for(unsigned int i = 0; i < ev.len; i++) {
+    void* pointer = *(void**)ev.arr[i];
+    if((pointer > end || pointer < start)) {
+      if(pointer) {
+        not_a_candidate++;
+      } else {
+        num_nulls++;
+      }
+    }
+    for(unsigned int j = i + 1; j < ev.len; j++) {
+      if(*(void**)ev.arr[i] == *(void**)ev.arr[j]) {
+        copy++;
+      }
+    }
+  }
+  if(not_a_candidate) {
+    printf("not_a_candidate: %u\n", not_a_candidate);
+  }
+  if(num_nulls != 1) {
+    printf("num_nulls: %u\n", num_nulls);
+  }
+  if(copy) {
+    printf("copy: %u\n", copy);
+  }
+}
+
 Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   Arr ev = arr_clone(&cand);
   // store index of head and tail of each deleted chunk
@@ -61,6 +94,7 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   const unsigned int nchunks = CACHE_ASSOCIATIVITY + 1;
   while(ev.len > CACHE_ASSOCIATIVITY) {
     printf("ev.len: %u\n", ev.len);
+    if(ev.len < 100) arr_print(ev);
     // 1. split
     // 2. set i = 0
     uint8_t found = 0;
@@ -68,13 +102,11 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
     // 3. loop until a miss don't occur for (S \ T[i])
     for(; i < nchunks; i++) {
       arr_unlink_chunk(&ev, &removed_chunks, nchunks, i);
-      printf("check after unlink (%u):\n", i);
       unsigned int t = 0;
-      for(unsigned int i = 0; i < ROUNDS_PER_SET; i++) t += timed_miss(ev.arr[0], probe);
-      t /= ROUNDS_PER_SET;
+      for(unsigned int i = 0; i < config->num_measurements; i++) t += timed_miss(ev.arr[0], probe);
+      t /= config->num_measurements;
       if(t < config->threshold) {
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
-        printf("check after relink (%u):\n", i);
       } else {
         found = 1;
         break;

@@ -18,10 +18,12 @@ int main(int argc, char** argv) {
   printf("generated eviction set\n");
   const unsigned int total = 1000;
   unsigned int fail = 0;
+
+  printf("at threshold: \33[48;2;%u;%u;%um \33[0m\n", config.threshold, config.threshold, config.threshold);
   for(unsigned int i = 0; i < total; i++) {
     unsigned int t = timed_miss(ev.arr[0], config.mmap_base);
     printf("\33[48;2;%u;%u;%um \33[0m", t, t, t);
-    fail += t < config.threshold;
+    fail += (t < config.threshold);
   }
   printf("fail: %u\n", fail);
   printf("total: %u\n", total);

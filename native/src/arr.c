@@ -64,13 +64,13 @@ Arr* arr_append(Arr* a, Arr* b) {
 }
 
 void arr_print(Arr a) {
-  for(unsigned int i = 0; i < a.len; i++) printf("%p ", a.arr[i]);
+  for(unsigned int i = 0; i < a.len; i++) printf("%p ", *(void**)a.arr[i]);
   printf("\n");
 }
 
 void* arr_to_linked_list(Arr* set) {
   if(!set->len) return NULL;
-  void** pointer = &set->arr[0];
+  void** pointer = set->arr[0];
   for(unsigned int i = 1; i < set->len; i++) {
     *pointer = set->arr[i];
     pointer = set->arr[i];
@@ -92,7 +92,8 @@ void arr_remove_chunk(Arr* arr, unsigned int nchunks, unsigned int chunk_idx) {
 void arr_unlink_chunk(Arr* ev, Arr* unlinked_chunks, unsigned int nchunks, unsigned int chunk_idx) {
   nchunks = MIN(ev->len, nchunks);
   unsigned int chunk_size = ev->len / nchunks;
-  unsigned int this_chunk_size = chunk_idx == (nchunks - 1) ? ev->len - (chunk_idx * chunk_size) : chunk_size;
+  int is_last_chunk = chunk_idx == (nchunks - 1);
+  unsigned int this_chunk_size = is_last_chunk ? ev->len - (chunk_idx * chunk_size) : chunk_size;
 
   // copy chunk to unlinked_chunks
   Arr* chunk = malloc(sizeof(Arr));
@@ -102,7 +103,7 @@ void arr_unlink_chunk(Arr* ev, Arr* unlinked_chunks, unsigned int nchunks, unsig
   // skip this chunk
   if(chunk_idx != 0) {
     void** head_prev = ev->arr[(chunk_size * chunk_idx) - 1];
-    *head_prev = chunk_idx == nchunks - 1 ? NULL : ev->arr[chunk_size * chunk_idx];
+    *head_prev = is_last_chunk ? NULL : ev->arr[chunk_size * (chunk_idx+1)];
   }
   void** tail = chunk->arr[chunk->len - 1];
   *tail = NULL;
@@ -113,11 +114,13 @@ void arr_unlink_chunk(Arr* ev, Arr* unlinked_chunks, unsigned int nchunks, unsig
 // relink last chunk in removed_chunks
 void arr_relink_chunk(Arr* ev, Arr* unlinked_chunks, unsigned int nchunks) {
   Arr* chunk = arr_pop(unlinked_chunks);
-  void** tail = chunk->arr[chunk->len - 1];
-  *tail = ev->arr[0];
+  // get memory for chunk
   ev->arr = realloc(ev->arr, (ev->len + chunk->len) * sizeof(void*));
-  memmove(&ev->arr[chunk->len], ev->arr, ev->len * sizeof(void*));
-  memcpy(ev->arr, chunk->arr, chunk->len * sizeof(void*));
+  // set chunk at the end of ev set
+  memcpy(&ev->arr[ev->len], chunk->arr, chunk->len * sizeof(void*));
+  // point last evset element to first chunk element
+  void** tail = ev->arr[ev->len-1];
+  *tail = chunk->arr[0];
   ev->len += chunk->len;
   arr_free(chunk);
   free(chunk);
