@@ -108,6 +108,7 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
       } else {
         printf("-");
+        fflush(stdout);
         level++;
         found = 1;
         break;
@@ -119,6 +120,7 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
       if(level && (!config->num_backtracks || backtrack_counter < config->num_backtracks)) {
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
         printf("<");
+        fflush(stdout);
         level--;
         if(removed_chunks.len == 0) break;
       } else {
@@ -127,6 +129,7 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
           arr_relink_chunk(&ev, &removed_chunks, nchunks);
         }
         printf("!");
+        fflush(stdout);
         break;
       }
     }

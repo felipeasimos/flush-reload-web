@@ -92,6 +92,9 @@ Caches that follow a permutation-based replacement policy have a fixed minimal n
 
 The algorithms below were described in "Theory and Practice of Finding Eviction Sets":
 
+* You can get specific cache specs in linux with `getconf -a | grep CACHE` (find out ways and number of sets in each cache)
+    * number of sets is `LEVEL3_CACHE_SIZE/(LEVEL3_CACHE_ASSOC * LEVEL3_CACHE_LINESIZE)`
+
 ###### Naive Reduction Approach (N²)
 
 ```
@@ -138,6 +141,7 @@ threshold = 160
 wait_cycles = 3
 time_slots = 100000
 ```
+
 
 ## GPG
 

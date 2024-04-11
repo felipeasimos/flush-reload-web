@@ -76,6 +76,10 @@ int main(int argc, char **argv) {
   Arr ev_sets[config.num_addrs];
   for (unsigned int i = 0; i < config.num_addrs; i++) {
     ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates);
+    while(ev_sets[i].len != CACHE_ASSOCIATIVITY) {
+      arr_free(&ev_sets[i]);
+      ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates);
+    }
     printf("ev.len[%d]: %u\n", i, ev_sets[i].len);
   }
   arr_free(&candidates);
