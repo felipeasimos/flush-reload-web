@@ -122,6 +122,7 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
         level--;
         if(removed_chunks.len == 0) break;
       } else {
+        // return linked list to original state
         while(removed_chunks.len > 0) { 
           arr_relink_chunk(&ev, &removed_chunks, nchunks);
         }
