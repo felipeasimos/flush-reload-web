@@ -91,10 +91,9 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   void* start = ev.arr[0];
   void* end = ev.arr[ev.len - 1];
   unsigned int backtrack_counter = 0;
+  unsigned int level = 0;
   const unsigned int nchunks = CACHE_ASSOCIATIVITY + 1;
   while(ev.len > CACHE_ASSOCIATIVITY) {
-    printf("ev.len: %u\n", ev.len);
-    if(ev.len < 100) arr_print(ev);
     // 1. split
     // 2. set i = 0
     uint8_t found = 0;
@@ -108,6 +107,8 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
       if(t < config->threshold) {
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
       } else {
+        printf("-");
+        level++;
         found = 1;
         break;
       }
@@ -115,13 +116,16 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
     // check if we need to backtrack
     if(!found) {
       backtrack_counter++;
-      if(backtrack_counter < config->num_backtracks) {
+      if(level && (!config->num_backtracks || backtrack_counter < config->num_backtracks)) {
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
+        printf("<");
+        level--;
         if(removed_chunks.len == 0) break;
       } else {
         while(removed_chunks.len > 0) { 
           arr_relink_chunk(&ev, &removed_chunks, nchunks);
         }
+        printf("!");
         break;
       }
     }

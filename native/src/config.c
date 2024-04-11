@@ -96,11 +96,10 @@ error:
 }
 
 void free_config(Config* config) {
+  if(config->mmap_base) munmap(config->mmap_base, config->file_stat.st_size);
+  if(config->candidate_pool) munmap(config->candidate_pool, config->num_candidates * config->stride);
   if(config->fd) {
     close(config->fd);
-  }
-  if(config->mmap_base) {
-    munmap(config->mmap_base, config->file_stat.st_size);
   }
   free(config->addrs);
   config->addrs = NULL;
