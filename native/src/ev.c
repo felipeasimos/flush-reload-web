@@ -10,13 +10,13 @@
 Arr generate_candidate_set(Config* config, void* target) {
   srand(time(0));
   const size_t pool_size = config->num_candidates * config->page_size;
-  unsigned int offset = ((unsigned long)(target) & (config->page_size-1));
+  unsigned int page_offset = ((unsigned long)(target) & (config->page_size-1));
   uint8_t evicted = 0;
   Arr arr;
   do {
     arr = arr_init(config->num_candidates);
     // populate array of candidate indices
-    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + (i * config->page_size) + offset;
+    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + (i * config->page_size) + page_offset;
     // swap indices around
     for(unsigned int i = 0; i < arr.len; i++) {
       unsigned int to_swap = rand() % arr.len;
@@ -39,6 +39,7 @@ Arr generate_candidate_set(Config* config, void* target) {
       }
     }
   } while(target && !evicted);
+  for(unsigned int i = 0; i < arr.len; i++) arr.arr[i] -= page_offset;
   return arr;
 }
 
@@ -76,7 +77,9 @@ void check(Arr ev, Config* config, void* pool) {
 }
 
 Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
+  unsigned int page_offset = ((unsigned long)(probe) & (config->page_size-1));
   Arr ev = arr_clone(&cand);
+  for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += page_offset;
   // set bits contained in the page offset must be equal in the candidates and probes
   // for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & (config->page_size-1));
   // store index of head and tail of each deleted chunk

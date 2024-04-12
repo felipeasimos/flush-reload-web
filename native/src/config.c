@@ -99,7 +99,7 @@ error:
 
 void free_config(Config* config) {
   if(config->mmap_base) munmap(config->mmap_base, config->file_stat.st_size);
-  if(config->candidate_pool) munmap(config->mmap_base, config->num_candidates * config->page_size);
+  if(config->candidate_pool) munmap(config->candidate_pool, config->num_candidates * config->page_size);
   if(config->fd) {
     close(config->fd);
   }

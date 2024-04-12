@@ -71,20 +71,18 @@ int main(int argc, char **argv) {
   }
 
 #if defined(WITH_EV) && WITH_EV
-  void* pools[config.num_addrs];
-  Arr candidates[config.num_addrs];
   Arr ev_sets[config.num_addrs];
+  Arr candidates = generate_candidate_set(&config, config.addrs[0]);
   for (unsigned int i = 0; i < config.num_addrs; i++) {
-    candidates[i] = generate_candidate_set(&config, config.addrs[i], &pools[i]);
-    ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates[i]);
+    ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates);
     while(ev_sets[i].len != CACHE_ASSOCIATIVITY) {
       arr_free(&ev_sets[i]);
-      ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates[i]);
+      ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates);
     }
     printf("ev.len[%d]: %u\n", i, ev_sets[i].len);
   }
   for(unsigned int i = 0; i < config.num_addrs; i++) {
-    arr_free(&candidates[i]);
+    arr_free(&candidates);
   }
   Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
   printf("conflict set len: %u\n", conflict_set.len);
@@ -124,6 +122,8 @@ int main(int argc, char **argv) {
   }
   fclose(report);
   free_config(&config);
+  fprintf(stderr, "whatdaf\n");
+  arr_free(&conflict_set);
   return 0;
 report_error:
   fclose(report);
