@@ -49,7 +49,7 @@ class EvictionSetGenerator {
             indices = new Array(this.config.num_candidates);
             for (let i = 0; i < indices.length; i++) indices[i] = this.candidatePoolPtr + (i * this.config.page_size) + pageOffset;
             for (let i = 0; i < indices.length; i++) {
-                const to_swap = Math.random() * (indices.length - 1);
+                const to_swap = Math.floor(Math.random() * (indices.length - 1));
                 const tmp = indices[i];
                 indices[i] = indices[to_swap];
                 indices[to_swap] = tmp;
@@ -57,7 +57,6 @@ class EvictionSetGenerator {
             this.setupLinkedList(indices);
             if (target) {
                 let t = this.measureTimedMiss(timed_miss, target, indices[0]);
-                console.log(t)
                 evicted = this.config.threshold < t;
             }
         } while (target && !evicted);
@@ -87,7 +86,7 @@ class EvictionSetGenerator {
     }
     reduceToEvictionSet(timed_miss, candidates, probe) {
         const pageOffset = probe & ((~(this.config.page_size - 1)) >>> 0);
-        let evset = candidates;
+        let evset = Array.from(candidates);
         for(let i = 0; i < evset.length; i++) evset[i] += pageOffset;
         let removedChunks = [];
         this.setupLinkedList(evset);
@@ -97,7 +96,7 @@ class EvictionSetGenerator {
         while(evset.length > this.config.associativity) {
             let found = false;
             let i = 0;
-            for(; i < nchunks; i++) {
+            for(; i < nchunks && !found; i++) {
                 [evset, removedChunks] = this.unlinkChunk(evset, removedChunks, nchunks, i);
                 let t = this.measureTimedMiss(timed_miss, probe, evset[0]);
                 if(t < this.config.threshold) {
@@ -105,7 +104,6 @@ class EvictionSetGenerator {
                 } else {
                     level++;
                     found = true;
-                    break;
                 }
             }
             if(!found) {
@@ -119,7 +117,7 @@ class EvictionSetGenerator {
                 while(removedChunks.length > 0) {
                     [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
                 }
-                break;
+                return evset;
             }
         }
         return evset;
@@ -154,6 +152,7 @@ self.onmessage = async (event) => {
         evsets[i] = evGenerator.reduceToEvictionSet(wasmUtils.exports.timed_miss, candidates, config.probe[i])
         console.log("evset[", i, "] created with size: ", evsets[i].length);
     }
+    console.log(candidates);
     console.log(evsets);
     const conflictSet = evGenerator.generateConflictSet(evsets);
     console.log(conflictSet)
