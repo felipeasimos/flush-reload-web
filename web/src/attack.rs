@@ -62,8 +62,7 @@ fn wait(number_of_cycles: u32) {
     }
 }
 
-#[no_mangle]
-pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
+fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
     let mut vec: Vec<u32> = vec![0; BUFFER_SIZE / core::mem::size_of::<u32>()];
     let base_ptr = vec.as_ptr() as u32;
     let mut pointer = indices[0];
@@ -75,8 +74,7 @@ pub fn indices_to_raw_linked_list(indices: Vec<u32>) -> Vec<u32> {
     vec
 }
 
-#[no_mangle]
-pub fn generate_candidate_set() -> Vec<u32> {
+fn generate_candidate_set() -> Vec<u32> {
     //
     let number_of_candidates = BUFFER_SIZE / CACHE_LINE_SIZE;
     let mut candidates: Vec<u32> = (0..number_of_candidates)
@@ -89,8 +87,7 @@ pub fn generate_candidate_set() -> Vec<u32> {
     candidates
 }
 
-#[no_mangle]
-pub fn generate_eviction_set(probe: u32, candidate_set: &Vec<u32>, threshold: u64) -> Vec<u32> {
+fn generate_eviction_set(probe: u32, candidate_set: &Vec<u32>, threshold: u64) -> Vec<u32> {
     let mut candidate_set = candidate_set.clone();
     let mut eviction_set: Vec<u32> = Vec::new();
     while let Some(random_offset) = candidate_set.pop() {

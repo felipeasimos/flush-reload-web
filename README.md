@@ -199,6 +199,6 @@ Assuming a 4K page memory size, and a 64 byte cache line, we control 6 bits of t
 
 Having multiple targets and one candidate pool means we'll probably have to increase the size of the candidate pool (or use multiple). Usually finding multiple good candidate pools for each target is easier than finding one good candidate pool for all.
 
-#### Choosing Targets
+#### Slices
 
-Because of these controllable targets
+Modern Intel CPUs slices the LLC in 1 or 2 slices per CPU core (typically this is the number at least). The slice of an address is determined by an undocumentated hash of the `n - l` most significant numbers (with `l` being the line size and `n` the number of bits in the address). This matters because nowadays the `set index` only determines which set the address belongs INSIDE its slice.
