@@ -9,8 +9,7 @@
 #include "fr.h"
 #include "config.h"
 
-void free_candidate_pool(Config* config, void** pool);
-Arr generate_candidate_set(Config* config, void* target, void** pool);
+Arr generate_candidate_set(Config* config, void* target);
 Arr generate_eviction_set(Config* config, void* probe, Arr cand);
 Arr generate_conflict_set(Arr* evs, unsigned long nevs);
 

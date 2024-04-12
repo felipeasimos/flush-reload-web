@@ -7,29 +7,16 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-void free_candidate_pool(Config* config, void** pool) {
-  munmap(pool, config->num_candidates * config->page_size);
-  *pool = NULL;
-}
-
-Arr generate_candidate_set(Config* config, void* target, void** pool) {
+Arr generate_candidate_set(Config* config, void* target) {
   srand(time(0));
   const size_t pool_size = config->num_candidates * config->page_size;
   unsigned int offset = ((unsigned long)(target) & (config->page_size-1));
   uint8_t evicted = 0;
   Arr arr;
   do {
-    *pool = mmap(
-      NULL,
-      pool_size,
-      PROT_READ | PROT_WRITE,
-      MAP_PRIVATE | MAP_ANONYMOUS,
-      -1,
-      0
-    );
     arr = arr_init(config->num_candidates);
     // populate array of candidate indices
-    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = (*pool) + (i * config->page_size) + offset;
+    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + (i * config->page_size) + offset;
     // swap indices around
     for(unsigned int i = 0; i < arr.len; i++) {
       unsigned int to_swap = rand() % arr.len;
@@ -49,7 +36,6 @@ Arr generate_candidate_set(Config* config, void* target, void** pool) {
         printf(".");
         fflush(stdout);
         arr_free(&arr);
-        munmap(*pool, pool_size);
       }
     }
   } while(target && !evicted);

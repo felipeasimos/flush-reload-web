@@ -103,9 +103,6 @@ int main(int argc, char **argv) {
     }
     printf("timed_miss avg[%d]: %u\n", i, t_miss / 1000);
   }
-  for(unsigned int i = 0; i < config.num_addrs; i++) {
-    free_candidate_pool(&config, &pools[i]);
-  }
 #endif
 
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");

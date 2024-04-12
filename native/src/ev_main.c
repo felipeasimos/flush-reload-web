@@ -31,9 +31,8 @@ int main(int argc, char** argv) {
   // void* target = config.mmap_base;
   printf("threshold (found): %u\n", get_threshold(target));
   for(unsigned int j = 0; j < 100; j++) {
-    // 1. generate candidate set (generate pool internally)
-    void* pool;
-    Arr candidates = generate_candidate_set(&config, target, &pool);
+    // 1. generate candidate set
+    Arr candidates = generate_candidate_set(&config, target);
     // 2. generate candidate set
     Arr ev = generate_eviction_set(&config, target, candidates);
     while(ev.len != CACHE_ASSOCIATIVITY) {
@@ -56,7 +55,6 @@ int main(int argc, char** argv) {
     printf("running error: %f\n", percentage / (j+1));
     arr_free(&candidates);
     arr_free(&ev);
-    free_candidate_pool(&config, &pool);
   }
   free_config(&config);
   return 0;

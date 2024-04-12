@@ -52,6 +52,7 @@ int parse_config(int argc, char** argv, Config* config) {
     PARSE(num_candidates, "%lu", (unsigned long*));
     PARSE(num_measurements, "%lu", (unsigned long*));
     PARSE(num_backtracks, "%lu", (unsigned long*));
+    // PARSE(candidate_pool, "%p", (void**));
     if( CHECK_IF_FIELD("probe") ) {
       config->addrs = realloc(config->addrs, (++config->num_addrs) * sizeof(void*));
       SSCANF(addrs[config->num_addrs-1], "%lX", (unsigned long*));
@@ -86,6 +87,8 @@ int parse_config(int argc, char** argv, Config* config) {
     printf("ERROR: couldn't make mmap call successfully\n");
     goto error;
   }
+  // get mmap memory for candidate pool
+  config->candidate_pool = mmap(NULL, config->num_candidates * config->page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   // update addresses
   for(uint32_t i = 0; i < config->num_addrs; i++) config->addrs[i] += (size_t)config->mmap_base;
   return 0;
@@ -96,6 +99,7 @@ error:
 
 void free_config(Config* config) {
   if(config->mmap_base) munmap(config->mmap_base, config->file_stat.st_size);
+  if(config->candidate_pool) munmap(config->mmap_base, config->num_candidates * config->page_size);
   if(config->fd) {
     close(config->fd);
   }
