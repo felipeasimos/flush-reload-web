@@ -1,9 +1,6 @@
 #ifndef EV_H
 #define EV_H
 
-#define CACHE_LINE_SIZE 64
-#define CACHE_ASSOCIATIVITY 12
-
 #include <stdint.h>
 #include "arr.h"
 #include "fr.h"

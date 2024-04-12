@@ -17,6 +17,7 @@ typedef struct Config {
   uint64_t num_candidates;
   uint64_t num_backtracks;
   uint64_t page_size;
+  uint64_t associativity;
 
   struct stat file_stat;
   int fd;

@@ -85,12 +85,10 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   // store index of head and tail of each deleted chunk
   Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);
-  void* start = ev.arr[0];
-  void* end = ev.arr[ev.len - 1];
   unsigned int backtrack_counter = 0;
   unsigned int level = 0;
-  const unsigned int nchunks = CACHE_ASSOCIATIVITY + 1;
-  while(ev.len > CACHE_ASSOCIATIVITY) {
+  const unsigned int nchunks = config->associativity + 1;
+  while(ev.len > config->associativity) {
     // 1. split
     // 2. set i = 0
     uint8_t found = 0;

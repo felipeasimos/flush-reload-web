@@ -1,5 +1,5 @@
 (module
-    (import "env" "memory" (memory 100 100 shared))
+    (import "env" "memory" (memory 277 277 shared))
     (func (export "counter") ;; load value at offset to the stack, add it to 1 and store the result back at 4096
         (loop $counter_loop 
             i32.const 0

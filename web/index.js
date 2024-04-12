@@ -1,36 +1,85 @@
-const memory = new WebAssembly.Memory({
-  initial: 100,
-  maximum: 100,
-  shared: true,
-});
+let buffer = null;
 
-const buffer = new DataView(memory.buffer);
+async function getConfig() {
+  const response = await fetch("/config");
+  const configString = await response.text();
+  const config = {
+    threshold: 0,
+    wait_cycles: 0,
+    time_slots: 0,
+    time_slot_size: 0,
+    target_file: "",
+    num_candidates: 0,
+    num_backtracks: 0,
+    page_size: 0,
+    num_measurements: 0,
+    probe: [],
+  };
+  const lines = configString.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.length == 0) continue;
+    const [key, value] = line.split(" ");
+    if (key == "probe") {
+      config.probe.push(Number(value));
+    } else if (key == "target_file") {
+      config.target_file = value;
+    } else {
+      config[key] = Number(value);
+    }
+  }
+  return config;
+}
+
+async function getTargetArrayBuffer() {
+  const response = await fetch("/target_file");
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+async function getMemory(config) {
+  const target = await getTargetArrayBuffer();
+  const candidatePoolSize = config.num_candidates * config.page_size;
+  const webassemblyPageSize = 64 * 1024;
+  const targetPtr = config.page_size + candidatePoolSize + (candidatePoolSize % config.page_size);
+  const memorySize = Math.ceil((targetPtr + target.byteLength) / webassemblyPageSize);
+  console.log("memorySize (number of 64 KiB pages):", memorySize);
+  const memory = new WebAssembly.Memory({
+    initial: memorySize,
+    maximum: memorySize,
+    shared: true,
+  });
+  // load target to memory
+  const memoryRegion = new Uint8Array(memory.buffer, targetPtr, target.byteLength);
+  memoryRegion.set(target)
+  return memory;
+}
 
 async function start() {
+  const config = await getConfig();
+  const memory = await getMemory(config)
+  buffer = new DataView(memory.buffer);
+
   // get clock wasm started
   const counterResponse = await fetch("./counter.wasm");
   const counterModule = new WebAssembly.Module(
     await counterResponse.arrayBuffer(),
   );
   const counterWorker = new Worker("./js/counter.js");
-  counterWorker.postMessage({ module: counterModule, memory: memory });
+  counterWorker.postMessage({
+    module: counterModule,
+    memory: memory,
+  });
 
   // attack utils
-  const utilsResponse = await fetch("./attack.wasm");
-  const utilsModule = new WebAssembly.Module(await utilsResponse.arrayBuffer());
+  const attackResponse = await fetch("./attack.wasm");
+  const attackModule = new WebAssembly.Module(await attackResponse.arrayBuffer());
 
   // get attack wasm worker
-  const attackResponse = await fetch(
-    "./target/wasm32-unknown-unknown/release/flush_reload.wasm",
-  );
-  const attackModule = new WebAssembly.Module(
-    await attackResponse.arrayBuffer(),
-  );
   const attackWorker = new Worker("./attack.js");
   attackWorker.postMessage({
-    module: attackModule,
     memory: memory,
-    utils: utilsModule,
+    utils: attackModule,
+    config: config
   });
 
   attackWorker.onmessage = (event) => {

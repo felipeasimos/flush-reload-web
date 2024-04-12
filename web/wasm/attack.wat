@@ -1,5 +1,5 @@
 (module
-    (import "env" "memory" (memory 100 100 shared))
+    (import "env" "memory" (memory 277 277 shared))
     (func $access (param $offset i32)
         (local $data i64)
         local.get $offset
