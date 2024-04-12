@@ -129,7 +129,9 @@ class EvictionSetGenerator {
                 set.add(evsets[i][j]);
             }
         }
-        return this.setupLinkedList(Array.from(set));
+        const conflictSet = Array.from(set);
+        this.setupLinkedList(conflictSet);
+        return conflictSet;
     }
 }
 
