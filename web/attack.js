@@ -93,6 +93,12 @@ class EvictionSetGenerator {
         let backtrackCounter = 0;
         let level = 0;
         const nchunks = this.config.associativity + 1;
+        for (let i = 0; i < evset.length; i++) {
+            const to_swap = Math.floor(Math.random() * (evset.length - 1));
+            const tmp = evset[i];
+            evset[i] = evset[to_swap];
+            evset[to_swap] = tmp;
+        }
         while(evset.length > this.config.associativity) {
             let found = false;
             let i = 0;
@@ -102,22 +108,28 @@ class EvictionSetGenerator {
                 if(t < this.config.threshold) {
                     [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
                 } else {
+                    console.log("-");
                     level++;
                     found = true;
                 }
             }
             if(!found) {
-                backtrackCounter++;
                 if(level && (!this.config.num_backtracks || backtrackCounter < this.config.num_backtracks)) {
+                    backtrackCounter++;
                     [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
+                    console.log("<");
                     level--;
-                    if(removedChunks.length == 0) break;
+                    if(removedChunks.length == 0) {
+                        console.log("|")
+                        return evset;
+                    }
+                } else {
+                    while(removedChunks.length > 0) {
+                        [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
+                    }
+                    console.log("!");
+                    return evset;
                 }
-            } else {
-                while(removedChunks.length > 0) {
-                    [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
-                }
-                return evset;
             }
         }
         return evset;
@@ -151,7 +163,9 @@ self.onmessage = async (event) => {
 
     const evsets = new Array(config.probe.length);
     for(let i = 0; i < evsets.length; i++) {
-        evsets[i] = evGenerator.reduceToEvictionSet(wasmUtils.exports.timed_miss, candidates, config.probe[i])
+        do {
+            evsets[i] = evGenerator.reduceToEvictionSet(wasmUtils.exports.timed_miss, candidates, config.probe[i])
+        } while(evsets[i].length > 12);
         console.log("evset[", i, "] created with size: ", evsets[i].length);
     }
     console.log(candidates);
