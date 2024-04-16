@@ -53,7 +53,7 @@ class EvictionSetGenerator {
         let evicted = false;
         let indices = [];
         do {
-            indices = new Array(this.config.num_candidates);
+            indices = new Uint32Array(this.config.num_candidates);
             for (let i = 0; i < indices.length; i++) indices[i] = this.candidatePoolPtr + (i * this.config.page_size) + pageOffset;
             for (let i = 0; i < indices.length; i++) {
                 const to_swap = Math.floor(Math.random() * (indices.length - 1));
@@ -168,22 +168,23 @@ self.onmessage = async (event) => {
     const timed_miss = wasmUtils.exports.timed_miss;
     const timed_access = wasmUtils.exports.timed_access;
     const evict = wasmUtils.exports.evict;
+    const timed_hit = wasmUtils.exports.timed_hit;
 
     const evGenerator = new EvictionSetGenerator(memDataView, config);
     console.log("evGenerator created")
     const candidates = evGenerator.generateCandidateSet(config.probe[0], timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
-    const evsets = new Array(config.probe.length);
-    for(let i = 0; i < evsets.length; i++) {
-        do {
-            evsets[i] = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[i])
-        } while(evsets[i].length > 12);
-        console.log("evset[", i, "] created with size: ", evsets[i].length);
-    }
-    const conflictSet = evGenerator.generateConflictSet(evsets);
-    console.log(conflictSet)
-    console.log("conflict set created with size: ", conflictSet.length);
+    // const evsets = new Array(config.probe.length);
+    // for(let i = 0; i < evsets.length; i++) {
+    //     do {
+    //         evsets[i] = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[i])
+    //     } while(evsets[i].length > 12);
+    //     console.log("evset[", i, "] created with size: ", evsets[i].length);
+    // }
+    // const conflictSet = evGenerator.generateConflictSet(evsets);
+    // console.log(conflictSet)
+    // console.log("conflict set created with size: ", conflictSet.length);
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
     encrypt();
@@ -191,12 +192,18 @@ self.onmessage = async (event) => {
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            results[i + j] = Number(timed_access(config.probe[j]));
+            results[i + j] = Number(timed_miss(config.probe[0], candidates[0]));
         }
-        evict(conflictSet[0]);
+        // evict(conflictSet[0]);
         do {
             wait(config.wait_cycles);
         } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));
     }
+    let numEvicted = 0
+    for(let i = 0; i < results.length; i++) {
+        if(results[i] > config.threshold) numEvicted++;
+    }
+    console.log("numEvicted:", numEvicted)
+    console.log("percentage evicted:", numEvicted / results.length)
     self.postMessage(results);
 };
