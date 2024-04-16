@@ -57,6 +57,10 @@ async function getMemory(config) {
 async function start() {
   const config = await getConfig();
   const memory = await getMemory(config)
+  const candidatePoolSize = config.num_candidates * config.page_size;
+  for(let i = 0; i < config.probe.length; i++) {
+    config.probe[i] += config.page_size + candidatePoolSize + (candidatePoolSize % config.page_size)
+  }
   buffer = new DataView(memory.buffer);
 
   // get clock wasm started
