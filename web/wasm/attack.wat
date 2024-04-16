@@ -76,13 +76,19 @@
             (local.set $td (i64.load (i32.wrap_i64 (local.get $td))))
             (br_if $iter (i32.eqz (i64.eqz (local.get $td)))))
         ;; t0 (mem[0])
-        (local.set $t0 (i64.load (i32.const 256)))
+        (; (local.set $t0 (i64.load (i32.const 256))) ;)
+        (local.set $t0 (i64.atomic.load (i32.const 256)))
         ;; re-access
         (local.set $td (i64.load (local.get $victim)))
         (; (local.set $td (i64.load (i32.and (i32.const 0xffffffff) (i32.or (local.get $victim) (i64.eqz (local.get $t0)))))) ;)
         ;; t1 (mem[0])
-        (local.set $t1 (i64.load (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td))))))
-        (i64.sub (local.get $t1) (local.get $t0))
+        (; (local.set $t1 (i64.load (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td)))))) ;)
+        atomic.fence
+        (local.set $t1 (i64.atomic.load (i32.const 256)))
+        local.get $t1
+        local.get $t0
+        i64.sub
+        (; (i64.sub (local.get $t1) (local.get $t0)) ;)
         return
     )
     (func $evict (param $linked_list i32)
