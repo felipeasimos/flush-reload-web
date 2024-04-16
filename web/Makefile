@@ -8,3 +8,5 @@ build:
 serve: build
 	cd $(mkfile_dir)
 	python3 server.py
+show:
+	wasm2wat --enable-threads attack.wasm | less -R

@@ -127,7 +127,7 @@ async function start() {
 }
 
 function getTime() {
-  console.log("time in memory (from JS):", buffer.getBigUint64(1, true));
+  console.log("time in memory (from JS):", buffer.getBigUint64(256, true));
 }
 
 window.onload = () => {

