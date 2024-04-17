@@ -24,36 +24,40 @@ class EvictionSetGenerator {
     }
     JSTimedMiss(probe, evsetPtr) {
         var data, t1, t0;
+
+        // prepare to traverse linked list
+        // let evsetPtrInWasm = 128;
+        // this.dataView.setUint32(0, probe, true);
         // access probe
-        data = this.dataView.getUint32(0, probe, true);
+        data = this.dataView.getUint32(probe, true);
         // traverse linked list
         while(evsetPtr) {
-            evsetPtr = this.dataView.getUint32(0, evsetPtr, true);
+            evsetPtr = this.dataView.getUint32(evsetPtr, true);
         }
         // time access
         t0 = getTime()
-        data = this.dataView.getUint32(0, probe, true);
+        data = this.dataView.getUint32(probe, true);
         t1 = getTime();
         return t1 - t0;
     }
     JSTimedHit(probe) {
         // time access
         var data, t1, t0;
-        data = this.dataView.getUint32(0, probe, true);
+        data = this.dataView.getUint32(probe, true);
         t0 = getTime()
-        data = this.dataView.getUint32(0, probe, true);
+        data = this.dataView.getUint32(probe, true);
         t1 = getTime();
         return t1 - t0;
     }
     JSTimedAccess(probe) {
         var data, t1, t0;
         t0 = getTime()
-        data = this.dataView.getUint32(0, probe, true);
+        data = this.dataView.getUint32(probe, true);
         t1 = getTime();
         return t1 - t0;
     }
     measureTimedMiss(timed_miss, probe, evsetPtr) {
-        const miss_func = timed_miss ? timed_miss : this.JSTimedMiss;
+        const miss_func = timed_miss ? timed_miss : this.JSTimedMiss.bind(this);
         let t = 0;
         for (let i = 0; i < this.config.num_measurements; i++) {
             t += Number(miss_func(probe, evsetPtr));
@@ -202,7 +206,7 @@ self.onmessage = async (event) => {
 
     const evGenerator = new EvictionSetGenerator(memDataView, config);
     console.log("evGenerator created")
-    const candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
+    const candidates = evGenerator.generateCandidateSet(config.page_size, null);
     console.log("candidate set created with size: ", candidates.length);
 
     // const evsets = new Array(config.probe.length);
@@ -215,15 +219,27 @@ self.onmessage = async (event) => {
     // const conflictSet = evGenerator.generateConflictSet(evsets);
     // console.log(conflictSet)
     // console.log("conflict set created with size: ", conflictSet.length);
-    // const evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.page_size);
+
+
+    let evset = evGenerator.reduceToEvictionSet(null, candidates, config.page_size);
+    do {
+        evset = evGenerator.reduceToEvictionSet(null, candidates, config.page_size);
+    } while(evset.length > 12);
+    console.log("evset[", 0, "] created with size: ", evset.length);
+
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
     // encrypt();
-
+    // evGenerator.setupLinkedList(candidates)
+    // make codelines hot
+    for(let i = 0; i < config.num_measurements; i++) {
+        evGenerator.JSTimedMiss(config.page_size, evset[0]);
+    }
+    console.log("Hot and loaded!")
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            const t = timed_miss(config.page_size, candidates[0]);
+            const t = evGenerator.JSTimedMiss(config.page_size, evset[0]);
             // const t = timed_hit(config.page_size);
             // const t = evGenerator.JSTimedMiss(config.page_size, candidates[0])
             results[i + j] = Number(t);
