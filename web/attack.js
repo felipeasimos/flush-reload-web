@@ -232,9 +232,9 @@ self.onmessage = async (event) => {
     // encrypt();
     // evGenerator.setupLinkedList(candidates)
     // make codelines hot
-    for(let i = 0; i < config.num_measurements; i++) {
-        evGenerator.JSTimedMiss(config.page_size, evset[0]);
-    }
+    // for(let i = 0; i < config.num_measurements; i++) {
+    //     evGenerator.JSTimedHit(config.page_size);
+    // }
     console.log("Hot and loaded!")
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
