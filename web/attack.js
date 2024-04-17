@@ -23,24 +23,33 @@ class EvictionSetGenerator {
         this.dataView = dataView;
     }
     JSTimedMiss(probe, evsetPtr) {
+        var data, t1, t0;
         // access probe
-        let data = this.dataView.getUint32(0, probe, true);
+        data = this.dataView.getUint32(0, probe, true);
         // traverse linked list
         while(evsetPtr) {
             evsetPtr = this.dataView.getUint32(0, evsetPtr, true);
         }
         // time access
-        const t0 = getTime()
+        t0 = getTime()
         data = this.dataView.getUint32(0, probe, true);
-        const t1 = getTime();
+        t1 = getTime();
         return t1 - t0;
     }
     JSTimedHit(probe) {
         // time access
-        var data;
-        const t0 = getTime()
+        var data, t1, t0;
         data = this.dataView.getUint32(0, probe, true);
-        const t1 = getTime();
+        t0 = getTime()
+        data = this.dataView.getUint32(0, probe, true);
+        t1 = getTime();
+        return t1 - t0;
+    }
+    JSTimedAccess(probe) {
+        var data, t1, t0;
+        t0 = getTime()
+        data = this.dataView.getUint32(0, probe, true);
+        t1 = getTime();
         return t1 - t0;
     }
     measureTimedMiss(timed_miss, probe, evsetPtr) {
@@ -66,7 +75,7 @@ class EvictionSetGenerator {
     getPageOffset(target) {
         target = target & ((this.config.page_size - 1) >>> 0);
         // to avoid unaligned memory access
-        target = target & ((~(4-1)) >>> 0)
+        // target = target & ((~(4-1)) >>> 0)
         return target ? target : 0;
     }
     generateCandidateSet(target, timed_miss) {
@@ -206,15 +215,16 @@ self.onmessage = async (event) => {
     // const conflictSet = evGenerator.generateConflictSet(evsets);
     // console.log(conflictSet)
     // console.log("conflict set created with size: ", conflictSet.length);
+    // const evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.page_size);
     const total_num_results = config.time_slots * config.probe.length;
-    const results = new Array(total_num_results);
+    const results = new Uint32Array(total_num_results);
     // encrypt();
 
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            // const t = timed_miss(config.page_size, candidates[0]);
-            const t = timed_hit(config.page_size);
+            const t = timed_miss(config.page_size, candidates[0]);
+            // const t = timed_hit(config.page_size);
             // const t = evGenerator.JSTimedMiss(config.page_size, candidates[0])
             results[i + j] = Number(t);
             // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.probe[0], candidates[0]);
