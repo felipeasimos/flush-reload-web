@@ -22,10 +22,32 @@ class EvictionSetGenerator {
         this.candidatePoolSize = config.num_candidates * config.page_size;
         this.dataView = dataView;
     }
+    JSTimedMiss(probe, evsetPtr) {
+        // access probe
+        let data = this.dataView.getUint32(0, probe, true);
+        // traverse linked list
+        while(evsetPtr) {
+            evsetPtr = this.dataView.getUint32(0, evsetPtr, true);
+        }
+        // time access
+        const t0 = getTime()
+        data = this.dataView.getUint32(0, probe, true);
+        const t1 = getTime();
+        return t1 - t0;
+    }
+    JSTimedHit(probe) {
+        // time access
+        var data;
+        const t0 = getTime()
+        data = this.dataView.getUint32(0, probe, true);
+        const t1 = getTime();
+        return t1 - t0;
+    }
     measureTimedMiss(timed_miss, probe, evsetPtr) {
+        const miss_func = timed_miss ? timed_miss : this.JSTimedMiss;
         let t = 0;
         for (let i = 0; i < this.config.num_measurements; i++) {
-            t += Number(timed_miss(probe, evsetPtr));
+            t += Number(miss_func(probe, evsetPtr));
         }
         return t / this.config.num_measurements;
     }
@@ -62,8 +84,7 @@ class EvictionSetGenerator {
             }
             this.setupLinkedList(indices);
             if (target) {
-                // let t = this.measureTimedMiss(timed_miss, target, indices[0]);
-                const t = timed_miss(target, indices[0])
+                let t = this.measureTimedMiss(timed_miss, target, indices[0]);
                 evicted = this.config.threshold < t;
                 if(!evicted) {
                     console.log(".")
@@ -172,7 +193,7 @@ self.onmessage = async (event) => {
 
     const evGenerator = new EvictionSetGenerator(memDataView, config);
     console.log("evGenerator created")
-    const candidates = evGenerator.generateCandidateSet(null, timed_miss);
+    const candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
     // const evsets = new Array(config.probe.length);
@@ -187,12 +208,14 @@ self.onmessage = async (event) => {
     // console.log("conflict set created with size: ", conflictSet.length);
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Array(total_num_results);
-    encrypt();
+    // encrypt();
 
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            const t = timed_miss(config.probe[0], candidates[0]);
+            // const t = timed_miss(config.page_size, candidates[0]);
+            const t = timed_hit(config.page_size);
+            // const t = evGenerator.JSTimedMiss(config.page_size, candidates[0])
             results[i + j] = Number(t);
             // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.probe[0], candidates[0]);
             // results[i + j] = Number(timed_hit(config.probe[0]))

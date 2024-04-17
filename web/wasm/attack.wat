@@ -1,64 +1,40 @@
 (module
-    (import "env" "memory" (memory 308 308 shared))
+    (import "env" "memory" (memory 2106 2106 shared))
     (func $access (param $offset i32)
         (local $data i64)
         local.get $offset
         i64.atomic.load
         local.set $data
     )
-    (; (func $timed_hit (param $offset i32) (result i64) ;)
-    (;     (local $time i64) ;)
-    (;     (local $data i64) ;)
-    (;     local.get $offset ;)
-    (;     i64.load ;)
-    (;     local.set $data ;)
-    (;     ;; get start time and save it to local variable ;)
-    (;     i32.const 256 ;)
-    (;     i64.load ;)
-    (;     local.set $time ;)
-    (;     ;; perform read from offset ;)
-    (;     local.get $offset ;)
-    (;     i64.load ;)
-    (;     local.set $data ;)
-    (;     ;; get end time and return it ;)
-    (;     i32.const 256 ;)
-    (;     i64.load ;)
-    (;     local.get $time ;)
-    (;     i64.sub ;)
-    (; ) ;)
     (func $timed_hit (param $victim i32) (result i64)
         (local $t0 i64)
         (local $t1 i64)
-        (local $td i64)
-        ;; acces victim
-        (local.set $td (i64.load (i32.and (i32.const 0xffffffff) (local.get $victim))))
-        ;; t0 (mem[0])
-        (local.set $t0 (i64.load (i32.and (i32.const 0xffffffff) (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td)))))))
+        (local $data i64)
+        (local.set $data (i64.load (local.get $victim)))
+        (local.set $t0 (i64.atomic.load (i32.const 256)))
         ;; re-access
-        (local.set $td (i64.load (i32.and (i32.const 0xffffffff) (i32.or (local.get $victim) (i64.eqz (local.get $t0))))))
+        (local.set $data (i64.load (local.get $victim)))
         ;; t1 (mem[0])
-        (local.set $t1 (i64.load (i32.and (i32.const 0xffffffff) (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td)))))))
-        (i64.sub (local.get $t1) (local.get $t0))
-        return)
-    (func $timed_access (param $offset i32) (result i64)
+        (local.set $t1 (i64.atomic.load (i32.const 256)))
+        local.get $t1
+        local.get $t0
+        i64.sub
+        return
+    )
+    (func $timed_access (param $victim i32) (result i64)
         (local $t0 i64)
         (local $t1 i64)
         (local $data i64)
-        ;; get start time and save it to local variable
-        i32.const 256
-        i64.atomic.load
-        local.set $t0
-        ;; perform read from offset
-        local.get $offset
-        i64.load
-        local.set $data
-        ;; get end time and return it
-        i32.const 256
-        i64.atomic.load
-        local.set $t1
-        local.get $t0
+        (local.set $t0 (i64.atomic.load (i32.const 256)))
+        ;; re-access
+        (local.set $data (i64.load (local.get $victim)))
+        ;; t1 (mem[0])
+        atomic.fence
+        (local.set $t1 (i64.atomic.load (i32.const 256)))
         local.get $t1
+        local.get $t0
         i64.sub
+        return
     )
     (func $get_time (result i64)
         i32.const 256
@@ -76,19 +52,14 @@
             (local.set $td (i64.load (i32.wrap_i64 (local.get $td))))
             (br_if $iter (i32.eqz (i64.eqz (local.get $td)))))
         ;; t0 (mem[0])
-        (; (local.set $t0 (i64.load (i32.const 256))) ;)
-        (local.set $t0 (i64.atomic.load (i32.const 256)))
+        (local.set $t0 (i64.load (i32.const 256)))
         ;; re-access
         (local.set $td (i64.load (local.get $victim)))
-        (; (local.set $td (i64.load (i32.and (i32.const 0xffffffff) (i32.or (local.get $victim) (i64.eqz (local.get $t0)))))) ;)
         ;; t1 (mem[0])
-        (; (local.set $t1 (i64.load (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td)))))) ;)
-        atomic.fence
-        (local.set $t1 (i64.atomic.load (i32.const 256)))
+        (local.set $t1 (i64.load (i32.const 256)))
         local.get $t1
         local.get $t0
         i64.sub
-        (; (i64.sub (local.get $t1) (local.get $t0)) ;)
         return
     )
     (func $evict (param $linked_list i32)
