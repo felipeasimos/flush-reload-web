@@ -118,6 +118,7 @@ async function start() {
       options: {
         scales: {
           y: {
+            // max: 100,
           },
           x: {
             type: "linear",
@@ -130,7 +131,7 @@ async function start() {
 }
 
 function getTime() {
-  console.log("time in memory (from JS):", buffer.getBigUint64(256, true));
+  console.log("time in memory (from JS):", buffer.getUint32(256, true));
 }
 
 window.onload = () => {

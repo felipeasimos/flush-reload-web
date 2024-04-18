@@ -1,7 +1,7 @@
-threshold 20
-wait_cycles 1
+threshold 4000
+wait_cycles 10
 time_slots 1000
-time_slot_size 10
+time_slot_size 0
 target_file ../gpg/gnupg-1.4.13/g10/gpg
 num_measurements 500
 page_size 4096

@@ -8,7 +8,7 @@ function encrypt() {
 let memDataView = null;
 
 function getTime() {
-    return memDataView.getBigUint64(256, true);
+    return memDataView.getUint32(256, true);
 }
 
 function wait(n) {
@@ -213,11 +213,11 @@ self.onmessage = async (event) => {
     const timed_access = wasmUtils.exports.timed_access;
     const evict = wasmUtils.exports.evict;
     const timed_hit = wasmUtils.exports.timed_hit;
-    // const timed_miss = wasmUtils.exports.timed_miss;
-    const timed_miss = null;
+    const timed_miss = wasmUtils.exports.timed_miss;
+    // const timed_miss = null;
 
     console.log("evGenerator created")
-    const candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
+    const candidates = evGenerator.generateCandidateSet(null, timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
     // const evsets = new Array(config.probe.length);
@@ -232,11 +232,11 @@ self.onmessage = async (event) => {
     // console.log("conflict set created with size: ", conflictSet.length);
 
 
-    let evset = []
-    do {
-        evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.page_size);
-    } while(evset.length > config.associativity);
-    console.log("evset[", 0, "] created with size: ", evset.length);
+    // let evset = null
+    // do {
+    //     evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.page_size);
+    // } while(evset.length > config.associativity);
+    // console.log("evset[", 0, "] created with size: ", evset.length);
 
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
@@ -246,15 +246,17 @@ self.onmessage = async (event) => {
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            // const t = timed_miss(config.page_size, evset[0]);
+            // wasmUtils.exports.access(config.page_size)
+            const t = timed_miss(config.page_size, candidates[0]);
+            // evict(candidates[0])
+            // const t = timed_access(config.page_size)
             // const t = timed_hit(config.page_size);
-            const t = evGenerator.JSTimedMiss(config.page_size, evset[0])
+            // const t = evGenerator.JSTimedMiss(config.page_size, evset[0])
+            // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.page_size, candidates[0]);
             results[i + j] = Number(t);
-            // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.probe[0], candidates[0]);
-            // results[i + j] = Number(timed_hit(config.probe[0]))
         }
-        if(i % 100 == 0) console.log(i)
-        // evict(conflictSet[0]);
+        // if(i % 100 == 0) console.log(i)
+        // evict(candidates[0]);
         do {
             wait(config.wait_cycles);
         } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));

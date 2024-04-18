@@ -10,8 +10,15 @@
             i32.store
 
             (; i32.const 256 ;)
-            (; i64.const 1 ;)
-            (; i64.atomic.rmw.add ;)
+            (; i32.const 1 ;)
+            (; i32.atomic.rmw.add ;)
+
+            (; i32.const 256 ;)
+            (; i32.const 256 ;)
+            (; i32.atomic.load ;)
+            (; i32.const 1 ;)
+            (; i32.add ;)
+            (; i32.atomic.store ;)
 
             br $counter_loop
         )
