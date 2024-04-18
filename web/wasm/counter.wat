@@ -4,10 +4,10 @@
         (loop $counter_loop 
             i32.const 256
             i32.const 256
-            i64.load
-            i64.const 1
-            i64.add
-            i64.store
+            i32.load
+            i32.const 1
+            i32.add
+            i32.store
 
             (; i32.const 256 ;)
             (; i64.const 1 ;)

@@ -56,6 +56,17 @@ class EvictionSetGenerator {
         t1 = getTime();
         return t1 - t0;
     }
+    JSEvict(evsetPtr) {
+        // prepare to traverse linked list
+        // let evsetPtrInWasm = 128;
+        // this.dataView.setUint32(0, probe, true);
+        // access probe
+        // data = this.dataView.getUint32(probe, true);
+        // traverse linked list
+        while(evsetPtr) {
+            evsetPtr = this.dataView.getUint32(evsetPtr, true);
+        }
+    }
     measureTimedMiss(timed_miss, probe, evsetPtr) {
         const miss_func = timed_miss ? timed_miss : this.JSTimedMiss.bind(this);
         let t = 0;
@@ -85,10 +96,9 @@ class EvictionSetGenerator {
     generateCandidateSet(target, timed_miss) {
         const pageOffset = this.getPageOffset(target);
         let evicted = false;
-        let indices = [];
+        let indices = new Array(this.config.num_candidates);
+        for (let i = 0; i < indices.length; i++) indices[i] = this.candidatePoolPtr + (i * this.config.page_size) + pageOffset;
         do {
-            indices = new Array(this.config.num_candidates);
-            for (let i = 0; i < indices.length; i++) indices[i] = this.candidatePoolPtr + (i * this.config.page_size) + pageOffset;
             for (let i = 0; i < indices.length; i++) {
                 const to_swap = Math.floor(Math.random() * (indices.length));
                 const tmp = indices[i];
@@ -111,48 +121,47 @@ class EvictionSetGenerator {
         const chunk = removedChunks.pop()
         // point last evset element to first chunk element
         this.dataView.setUint32(evset[evset.length-1], chunk[0], true);
-        evset = evset.concat(chunk); 
-        return [evset, removedChunks]
+        evset.push(...chunk)
     }
     unlinkChunk(evset, removedChunks, nchunks, chunk_idx) {
         nchunks = evset.length < nchunks ? evset.length : nchunks;
-        const chunkSize = evset.length / nchunks;
+        const chunkSize = Math.floor(evset.length / nchunks);
         const isLastChunk = chunk_idx == (nchunks - 1);
-        const chunkHead = nchunks * chunk_idx;
+        const chunkHead = chunkSize * chunk_idx;
         const thisChunkSize = isLastChunk ? evset.length - chunkHead : chunkSize;
-        const newChunk = evset.splice(chunkHead, thisChunkSize);
-        removedChunks = removedChunks.concat(newChunk);
+        // skip this chunk
         if(chunk_idx != 0 ) {
             this.dataView.setUint32(evset[chunkHead - 1], isLastChunk ? 0 : evset[chunkHead + chunkSize], true);
         }
+        const newChunk = evset.splice(chunkHead, thisChunkSize);
+        removedChunks.push(newChunk);
         this.dataView.setUint32(newChunk[newChunk.length - 1], 0, true);
-        return [evset, removedChunks]
     }
     reduceToEvictionSet(timed_miss, candidates, probe) {
         const pageOffset = this.getPageOffset(probe);
+        const nchunks = this.config.associativity + 1;
         let evset = Array.from(candidates);
         for(let i = 0; i < evset.length; i++) evset[i] += pageOffset;
         let removedChunks = [];
-        this.setupLinkedList(evset);
         let backtrackCounter = 0;
         let level = 0;
-        const nchunks = this.config.associativity + 1;
         for (let i = 0; i < evset.length; i++) {
             const to_swap = Math.floor(Math.random() * (evset.length - 1));
             const tmp = evset[i];
             evset[i] = evset[to_swap];
             evset[to_swap] = tmp;
         }
+        this.setupLinkedList(evset);
         while(evset.length > this.config.associativity) {
             let found = false;
             let i = 0;
             for(; i < nchunks && !found; i++) {
-                [evset, removedChunks] = this.unlinkChunk(evset, removedChunks, nchunks, i);
+                this.unlinkChunk(evset, removedChunks, nchunks, i);
                 let t = this.measureTimedMiss(timed_miss, probe, evset[0]);
                 if(t < this.config.threshold) {
-                    [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
+                    this.relinkChunk(evset, removedChunks);
                 } else {
-                    console.log("-");
+                    console.log("-", evset.length, removedChunks.length, i);
                     level++;
                     found = true;
                 }
@@ -160,18 +169,18 @@ class EvictionSetGenerator {
             if(!found) {
                 if(level && (!this.config.num_backtracks || backtrackCounter < this.config.num_backtracks)) {
                     backtrackCounter++;
-                    [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
-                    console.log("<");
+                    this.relinkChunk(evset, removedChunks);
+                    console.log("<", evset.length, removedChunks.length);
                     level--;
                     if(removedChunks.length == 0) {
-                        console.log("|")
+                        console.log("|", evset.length, removedChunks.length)
                         return evset;
                     }
                 } else {
                     while(removedChunks.length > 0) {
-                        [evset, removedChunks] = this.relinkChunk(evset, removedChunks);
+                        this.relinkChunk(evset, removedChunks);
                     }
-                    console.log("!");
+                    console.log("!", evset.length, removedChunks.length);
                     return evset;
                 }
             }
@@ -199,14 +208,16 @@ self.onmessage = async (event) => {
         },
     });
     memDataView = new DataView(memory.buffer);
-    const timed_miss = wasmUtils.exports.timed_miss;
+    const evGenerator = new EvictionSetGenerator(memDataView, config);
+
     const timed_access = wasmUtils.exports.timed_access;
     const evict = wasmUtils.exports.evict;
     const timed_hit = wasmUtils.exports.timed_hit;
+    // const timed_miss = wasmUtils.exports.timed_miss;
+    const timed_miss = null;
 
-    const evGenerator = new EvictionSetGenerator(memDataView, config);
     console.log("evGenerator created")
-    const candidates = evGenerator.generateCandidateSet(config.page_size, null);
+    const candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
     // const evsets = new Array(config.probe.length);
@@ -221,31 +232,28 @@ self.onmessage = async (event) => {
     // console.log("conflict set created with size: ", conflictSet.length);
 
 
-    let evset = evGenerator.reduceToEvictionSet(null, candidates, config.page_size);
+    let evset = []
     do {
-        evset = evGenerator.reduceToEvictionSet(null, candidates, config.page_size);
-    } while(evset.length > 12);
+        evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.page_size);
+    } while(evset.length > config.associativity);
     console.log("evset[", 0, "] created with size: ", evset.length);
 
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
+    console.log("total number of results:", total_num_results)
     // encrypt();
-    // evGenerator.setupLinkedList(candidates)
-    // make codelines hot
-    // for(let i = 0; i < config.num_measurements; i++) {
-    //     evGenerator.JSTimedHit(config.page_size);
-    // }
     console.log("Hot and loaded!")
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
-            const t = evGenerator.JSTimedMiss(config.page_size, evset[0]);
+            // const t = timed_miss(config.page_size, evset[0]);
             // const t = timed_hit(config.page_size);
-            // const t = evGenerator.JSTimedMiss(config.page_size, candidates[0])
+            const t = evGenerator.JSTimedMiss(config.page_size, evset[0])
             results[i + j] = Number(t);
             // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.probe[0], candidates[0]);
             // results[i + j] = Number(timed_hit(config.probe[0]))
         }
+        if(i % 100 == 0) console.log(i)
         // evict(conflictSet[0]);
         do {
             wait(config.wait_cycles);

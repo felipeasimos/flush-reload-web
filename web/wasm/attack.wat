@@ -39,26 +39,53 @@
         i32.const 256
         i64.load
     )
-    (func $timed_miss (param $victim i32) (param $ptr i32) (result i64)
-        (local $t0 i64)
-        (local $t1 i64)
-        (local $td i64)
+ (;    (func $timed_miss (param $victim i32) (param $ptr i32) (result i32) ;)
+ (;        (local $t0 i32) ;)
+ (;        (local $t1 i32) ;)
+ (;        (local $td i32) ;)
+ (;        ;; acces victim ;)
+ (;        (local.set $td (i32.load (i32.and (i32.const 0xffffffff) (local.get $victim)))) ;)
+	(; ;; traverse ;)
+ (;        (local.set $td (i32.or (i32.eqz (i32.eqz (local.get $td))) (local.get $ptr))) ;)
+ (;        (loop $iter ;)
+ (;            (local.set $td (i32.load (local.get $td))) ;)
+ (;            (br_if $iter (local.get $td))) ;)
+ (;        ;; t0 (mem[0]) ;)
+ (;        (; (local.set $t0 (i32.load (i32.and (i32.const 0xffffffff) (i32.or (i32.const 256) (i32.eqz (i32.eqz (local.get $td))))))) ;) ;)
+ (;        (local.set $t0 (i32.const 256)) ;)
+ (;        ;; re-access ;)
+ (;        (local.set $td (i32.load (i32.and (i32.const 0xffffffff) (i32.or (local.get $victim) (i32.eqz (local.get $t0)))))) ;)
+ (;        ;; t1 (mem[0]) ;)
+ (;        (local.set $t1 (i32.const 256)) ;)
+ (;        (; (local.set $t1 (i32.load (i32.and (i32.const 0xffffffff) (i32.or (i32.const 256) (i32.eqz (i32.eqz (local.get $td))))))) ;) ;)
+ (;        (i32.sub (local.get $t0) (local.get $t1)) ;)
+ (;        return ;)
+ (;    ) ;)
+    (func $timed_miss (param $victim i32) (param $ptr i32) (result i32)
+        (local $t0 i32)
+        (local $t1 i32)
+        (local $td i32)
         ;; acces victim
-        (local.set $td (i64.load (local.get $victim)))
-		;; traverse
-        (local.set $td (i64.extend_i32_u (i32.or (i32.eqz (i64.eqz (local.get $td))) (local.get $ptr))))
+        (local.set $td (i32.load (local.get $victim)))
+        (; (local.set $td (i64.load (i32.and (i32.const 0xffffffff) (local.get $victim)))) ;)
+	;; traverse
+        (local.set $td (i32.or (local.get $td) (local.get $ptr)))
         (loop $iter
-            (local.set $td (i64.load (i32.wrap_i64 (local.get $td))))
-            (br_if $iter (i32.eqz (i64.eqz (local.get $td)))))
+            (local.set $td (i32.load (local.get $td)))
+            (br_if $iter (local.get $td)))
         ;; t0 (mem[0])
-        (local.set $t0 (i64.load (i32.const 256)))
+        (local.set $t0 (i32.load (i32.const 256)))
+        (; (local.set $t0 (i64.load (i32.and (i32.const 0xffffffff) (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td))))))) ;)
         ;; re-access
-        (local.set $td (i64.load (local.get $victim)))
+        (local.set $td (i32.load (local.get $victim)))
+        (; (local.set $td (i64.load (i32.and (i32.const 0xffffffff) (i32.or (local.get $victim) (i64.eqz (local.get $t0)))))) ;)
         ;; t1 (mem[0])
-        (local.set $t1 (i64.load (i32.const 256)))
+        (local.set $t1 (i32.load (i32.const 256)))
+        (; (local.set $t1 (i32.load (i32.const 256))) ;)
+        (; (local.set $t1 (i64.load (i32.and (i32.const 0xffffffff) (i32.or (i32.const 256) (i32.eqz (i64.eqz (local.get $td))))))) ;)
         local.get $t1
         local.get $t0
-        i64.sub
+        i32.sub
         return
     )
     (func $evict (param $linked_list i32)
