@@ -210,10 +210,18 @@ self.onmessage = async (event) => {
     memDataView = new DataView(memory.buffer);
     const evGenerator = new EvictionSetGenerator(memDataView, config);
 
+    const access = wasmUtils.exports.access;
+    const get_time = wasmUtils.exports.get_time;
     const timed_access = wasmUtils.exports.timed_access;
     const evict = wasmUtils.exports.evict;
     const timed_hit = wasmUtils.exports.timed_hit;
-    const timed_miss = wasmUtils.exports.timed_miss;
+    const timed_miss = function(probe, evset) {
+        // evict(evset);
+        const t0 = get_time()
+        access(probe);
+        const t1 = get_time();
+        return t1 - t0;
+    };
     // const timed_miss = null;
 
     console.log("evGenerator created")
