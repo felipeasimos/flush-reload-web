@@ -54,12 +54,11 @@
     )
     (func $timed_miss (param $victim i32) (param $linked_list i32) (result i64)
         (local $time i64)
-        (local $data i64)
         (local $td i32)
         (; (call $access (local.get $victim)) ;)
         local.get $victim
         i64.load
-        local.set $data
+        drop
         (; (call $evict (local.get $ptr)) ;)
         (local.set $td (local.get $linked_list))
         (loop $iter
@@ -67,12 +66,12 @@
             (br_if $iter (local.get $td))
         )
         (; (call $get_time) ;)
-        (local.set $time (i64.load (i32.const 0)))
+        (local.set $time (i64.load (i32.const 256)))
         local.get $victim
         i64.load
         drop
         (; (call $get_time) ;)
-        (i64.load (i32.const 0))
+        (i64.load (i32.const 256))
         (local.get $time)
         (i64.sub)
     )
