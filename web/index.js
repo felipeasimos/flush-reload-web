@@ -118,7 +118,7 @@ async function start() {
       options: {
         scales: {
           y: {
-            // max: 100,
+            max: 100,
           },
           x: {
             type: "linear",
