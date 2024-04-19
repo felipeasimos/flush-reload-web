@@ -8,6 +8,5 @@ self.onmessage = function(e) {
   // const arr = new Uint32Array(memory.buffer)
   // while(true) {
   //   Atomics.add(arr, 256, 1);
-  //   Atomics.add(arr, 128, 1);
   // }
 }
