@@ -42,7 +42,7 @@
     )
     (func $get_time (result i64)
         i32.const 0
-        i64.load
+        i64.atomic.load
     )
     (func $evict (param $linked_list i32)
         (local $td i64)
@@ -52,14 +52,27 @@
             (local.set $td (i64.load (i32.wrap_i64 (local.get $td))))
             (br_if $iter (i32.eqz (i64.eqz (local.get $td)))))
     )
-    (func $timed_miss (param $victim i32) (param $ptr i32) (result i64)
+    (func $timed_miss (param $victim i32) (param $linked_list i32) (result i64)
         (local $time i64)
-        (call $access (local.get $victim))
-        (call $evict (local.get $ptr))
-        (call $get_time)
-        (local.set $time)
-        (call $access (local.get $victim))
-        (call $get_time)
+        (local $data i64)
+        (local $td i32)
+        (; (call $access (local.get $victim)) ;)
+        local.get $victim
+        i64.load
+        local.set $data
+        (; (call $evict (local.get $ptr)) ;)
+        (local.set $td (local.get $linked_list))
+        (loop $iter
+            (local.set $td (i32.load (local.get $td)))
+            (br_if $iter (local.get $td))
+        )
+        (; (call $get_time) ;)
+        (local.set $time (i64.load (i32.const 0)))
+        local.get $victim
+        i64.load
+        drop
+        (; (call $get_time) ;)
+        (i64.load (i32.const 0))
         (local.get $time)
         (i64.sub)
     )

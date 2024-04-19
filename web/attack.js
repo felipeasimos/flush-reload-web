@@ -226,7 +226,7 @@ self.onmessage = async (event) => {
     // const timed_miss = null;
 
     console.log("evGenerator created")
-    const candidates = evGenerator.generateCandidateSet(null, timed_miss);
+    const candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
     // const evsets = new Array(config.probe.length);

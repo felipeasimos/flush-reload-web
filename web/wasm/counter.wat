@@ -16,11 +16,11 @@
             (; i64.add ;)
             (; i64.store ;)
 
-            (; (i64.store (i32.const 256) (i64.add (i64.load (i32.const 256)) (i64.const 1))) ;)
+            (i64.store (i32.const 0) (i64.add (i64.load (i32.const 0)) (i64.const 1)))
 
-            i32.const 0
-            i32.const 1
-            i32.atomic.rmw.add
+            (; i32.const 0 ;)
+            (; i32.const 1 ;)
+            (; i32.atomic.rmw.add ;)
 
             (; i32.const 256 ;)
             (; i32.const 256 ;)
