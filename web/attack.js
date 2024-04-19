@@ -218,14 +218,13 @@ function thresholdCalibration(timed_miss, timed_hit, probe, evset, numMeasuremen
     for(let i = 0; i < numMeasurements; i++) {
         hits[i] = Number(timed_hit(probe));
     }
-    hits.sort()
-    misses.sort()
-    const hit_median = mean(hits)
-    const miss_median = mean(misses)
+    // filter out 0s, these are clearly hits (usually there is a huge gap with no points in between)
+    const hit_median = median(hits)
+    const miss_median = median(misses.filter(x => x > 0))
 
     console.log("median hit found:", hit_median)
     console.log("median miss found:", miss_median)
-    return ((hit_median) + miss_median)/2
+    return ((2*hit_median) + miss_median)/3
 }
 
 self.onmessage = async (event) => {
