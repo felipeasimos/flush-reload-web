@@ -263,15 +263,15 @@ self.onmessage = async (event) => {
     // const timed_miss = null;
 
     console.log("evGenerator created")
-    let candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
+    let candidates = evGenerator.generateCandidateSet(config.probe[0], timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
-    if(config.threshold == 0) {
-        config.threshold = thresholdCalibration(timed_miss, timed_hit, config.page_size, candidates[0], config.num_measurements)
-        console.log("Threshold calibration result:", config.threshold)
-        evGenerator = new EvictionSetGenerator(memDataView, config);
-        candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
-    }
+    // if(config.threshold == 0) {
+    //     config.threshold = thresholdCalibration(timed_miss, timed_hit, config.probe[0], candidates[0], config.num_measurements)
+    //     console.log("Threshold calibration result:", config.threshold)
+    //     evGenerator = new EvictionSetGenerator(memDataView, config);
+    //     candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
+    // }
 
     // const evsets = new Array(config.probe.length);
     // for(let i = 0; i < evsets.length; i++) {
@@ -287,7 +287,7 @@ self.onmessage = async (event) => {
 
     let evset = null
     do {
-        evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.page_size);
+        evset = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[0]);
     } while(evset.length > config.associativity);
     console.log("evset[", 0, "] created with size: ", evset.length);
 
@@ -300,7 +300,7 @@ self.onmessage = async (event) => {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
             // wasmUtils.exports.access(config.page_size)
-            const t = timed_access(config.page_size);
+            const t = timed_access(config.probe[0]);
             // evict(candidates[0])
             // const t = timed_access(config.page_size)
             // const t = timed_hit(config.page_size);
