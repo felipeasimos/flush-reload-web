@@ -264,7 +264,7 @@ self.onmessage = async (event) => {
     // const timed_miss = null;
 
     console.log("evGenerator created")
-    let candidates = evGenerator.generateCandidateSet(null, timed_miss);
+    let candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
     console.log("candidate set created with size: ", candidates.length);
 
     if(config.threshold == 0) {
@@ -301,7 +301,7 @@ self.onmessage = async (event) => {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
             // wasmUtils.exports.access(config.page_size)
-            const t = timed_miss(config.page_size, evset[0]);
+            const t = timed_access(config.page_size);
             // evict(candidates[0])
             // const t = timed_access(config.page_size)
             // const t = timed_hit(config.page_size);
@@ -310,7 +310,7 @@ self.onmessage = async (event) => {
             results[i + j] = Number(t);
         }
         // if(i % 100 == 0) console.log(i)
-        // evict(candidates[0]);
+        evict(evset[0]);
         do {
             wait(config.wait_cycles);
         } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));
