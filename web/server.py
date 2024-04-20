@@ -3,6 +3,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 import mimetypes
 import subprocess
+import json
+import os
 
 hostName = "0.0.0.0"
 serverPort = 8000
@@ -10,11 +12,26 @@ serverPort = 8000
 
 class MyServer(BaseHTTPRequestHandler):
     def do_POST(self):
-        self.send_response(200)
-        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
-        self.end_headers()
-        self.encrypt()
+
+        if self.path == "/encrypt":
+            self.send_response(200)
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+            self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+            self.end_headers()
+            self.encrypt()
+        elif self.path == "/results":
+            content_len = int(self.headers.get('Content-Length', 0))
+            post_body = json.loads(self.rfile.read(content_len))
+            row_len = len(post_body[0])
+            indices = [str(x) for x in range(row_len)]
+            with open("../data/report.plot", "w") as f:
+                f.writelines([" ".join([str(row[i]) for i in indices]) + "\n" for row in post_body])
+            os.system("make -C ../utils build-bento parse compare")
+            self.send_response(200)
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+            self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+            self.end_headers()
+
 
     def do_GET(self):
 

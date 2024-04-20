@@ -1,5 +1,46 @@
 let buffer = null;
 
+function sendResults(results) {
+    console.log("sending results")
+    fetch("/results", { method: "POST", body: JSON.stringify(results) }).then(() =>
+        console.log("results sent!"),
+    );
+}
+
+function drawChart(results) {
+    new Chart(document.getElementById("results"), {
+      type: "scatter",
+      data: {
+        labels: ["Square", "Reduce", "Multiply"],
+        datasets: [
+          {
+            label: "Square",
+            data: results.map((d, idx) => ({ x: idx, y: d[0] })),
+          },
+          {
+            label: "Reduce",
+            data: results.map((d, idx) => ({ x: idx, y: d[1] })),
+          },
+          {
+            label: "Multiply",
+            data: results.map((d, idx) => ({ x: idx, y: d[2] })),
+          },
+        ],
+      },
+      options: {
+        scales: {
+          y: {
+            max: 100,
+          },
+          x: {
+            type: "linear",
+            position: "bottom",
+          },
+        },
+      },
+    });
+}
+
 async function getConfig() {
   const response = await fetch("/config");
   const configString = await response.text();
@@ -96,37 +137,8 @@ async function start() {
       results.push(raw_results.slice(i, i + chunk_size));
     }
     console.log(results);
-    new Chart(document.getElementById("results"), {
-      type: "scatter",
-      data: {
-        labels: ["Square", "Reduce", "Multiply"],
-        datasets: [
-          {
-            label: "Square",
-            data: results.map((d, idx) => ({ x: idx, y: d[0] })),
-          },
-          {
-            label: "Reduce",
-            data: results.map((d, idx) => ({ x: idx, y: d[1] })),
-          },
-          {
-            label: "Multiply",
-            data: results.map((d, idx) => ({ x: idx, y: d[2] })),
-          },
-        ],
-      },
-      options: {
-        scales: {
-          y: {
-            max: 100,
-          },
-          x: {
-            type: "linear",
-            position: "bottom",
-          },
-        },
-      },
-    });
+
+    sendResults(results)
   };
 }
 

