@@ -295,7 +295,6 @@ self.onmessage = async (event) => {
     const results = new Uint32Array(total_num_results);
     console.log("total number of results:", total_num_results)
     // encrypt();
-    console.log("Hot and loaded!")
     for(let i = 0; i < total_num_results; i += config.probe.length) {
         const startTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
