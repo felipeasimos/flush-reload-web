@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
   Arr candidates = generate_candidate_set(&config, config.addrs[0]);
   for (unsigned int i = 0; i < config.num_addrs; i++) {
     ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates);
-    while(ev_sets[i].len != CACHE_ASSOCIATIVITY) {
+    while(ev_sets[i].len != config.associativity) {
       arr_free(&ev_sets[i]);
       ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates);
     }
@@ -122,7 +122,6 @@ int main(int argc, char **argv) {
   }
   fclose(report);
   free_config(&config);
-  fprintf(stderr, "whatdaf\n");
   arr_free(&conflict_set);
   return 0;
 report_error:

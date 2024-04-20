@@ -7,7 +7,8 @@ target_file ../data/gpg
 num_measurements 500
 page_size 4096
 num_candidates 3500
-num_backtracks 0
+num_backtracks 100
+associativity 12
 probe 0x9c681
 probe 0x9b597
 probe 0x9c182

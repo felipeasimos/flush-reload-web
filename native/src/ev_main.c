@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     Arr candidates = generate_candidate_set(&config, target);
     // 2. generate candidate set
     Arr ev = generate_eviction_set(&config, target, candidates);
-    while(ev.len != CACHE_ASSOCIATIVITY) {
+    while(ev.len != config.associativity) {
       arr_free(&ev);
       ev = generate_eviction_set(&config, target, candidates);
     }

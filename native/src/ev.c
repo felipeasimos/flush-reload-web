@@ -80,17 +80,22 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
   unsigned int page_offset = ((unsigned long)(probe) & (config->page_size-1));
   Arr ev = arr_clone(&cand);
   for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += page_offset;
+  // swap indices around
+  for(unsigned int i = 0; i < ev.len; i++) {
+    unsigned int to_swap = rand() % ev.len;
+    void* tmp = ev.arr[i];
+    ev.arr[i] = ev.arr[to_swap];
+    ev.arr[to_swap] = tmp;
+  }
   // set bits contained in the page offset must be equal in the candidates and probes
   // for(unsigned int i = 0; i < ev.len; i++) ev.arr[i] += ((unsigned long)(probe) & (config->page_size-1));
   // store index of head and tail of each deleted chunk
   Arr removed_chunks = arr_init(0);
   arr_to_linked_list(&ev);
-  void* start = ev.arr[0];
-  void* end = ev.arr[ev.len - 1];
   unsigned int backtrack_counter = 0;
   unsigned int level = 0;
-  const unsigned int nchunks = CACHE_ASSOCIATIVITY + 1;
-  while(ev.len > CACHE_ASSOCIATIVITY) {
+  const unsigned int nchunks = config->associativity + 1;
+  while(ev.len > config->associativity) {
     // 1. split
     // 2. set i = 0
     uint8_t found = 0;
@@ -113,13 +118,16 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
     }
     // check if we need to backtrack
     if(!found) {
-      backtrack_counter++;
       if(level && (!config->num_backtracks || backtrack_counter < config->num_backtracks)) {
+        backtrack_counter++;
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
         printf("<");
         fflush(stdout);
         level--;
-        if(removed_chunks.len == 0) break;
+        if(removed_chunks.len == 0) {
+          printf("|");
+          break;
+        };
       } else {
         // return linked list to original state
         while(removed_chunks.len > 0) { 
