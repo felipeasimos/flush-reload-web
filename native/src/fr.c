@@ -106,7 +106,6 @@ int main(int argc, char **argv) {
 #endif
 
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
-  system("./run-gpg.sh &");
   spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles,
       config.time_slot_size, config.threshold);
   fprintf(stderr, "\t|||   ...closed spy...   |||\n");
