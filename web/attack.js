@@ -299,9 +299,11 @@ self.onmessage = async (event) => {
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
     console.log("total number of results:", total_num_results)
+    const time_slot_size = BigInt(config.time_slot_size)
+    const startTime = new Date();
     encrypt();
     for(let i = 0; i < total_num_results; i += config.probe.length) {
-        // const startTime = wasmUtils.exports.get_time()
+        const slotTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
             // wasmUtils.exports.access(config.page_size)
             const t = timed_access(config.probe[j]);
@@ -310,17 +312,20 @@ self.onmessage = async (event) => {
             // const t = timed_hit(config.page_size);
             // const t = evGenerator.JSTimedMiss(config.page_size, evset[0])
             // results[i + j] = evGenerator.measureTimedMiss(timed_miss, config.page_size, candidates[0]);
-            results[i + j] = Number(t) < config.threshold ? 1 : 0;
+            results[i + j] = Number(t);
         }
         // if(i % 100 == 0) console.log(i)
         evict(conflictSet[0]);
-        // do {
-        //     wait(config.wait_cycles);
-        // } while (wasmUtils.exports.get_time() - startTime < BigInt(config.time_slot_size));
+        do {
+            wait(config.wait_cycles);
+        } while (wasmUtils.exports.get_time() - slotTime < time_slot_size);
     }
+    const testTime = new Date(new Date() - startTime);
+    console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)
     let numEvicted = 0
     for(let i = 0; i < results.length; i++) {
-        if(results[i] >= config.threshold) numEvicted++;
+        results[i] = results[i] < config.threshold ? 1 : 0
+        if(results[i]) numEvicted++;
     }
     console.log("numEvicted:", numEvicted)
     console.log("percentage evicted:", numEvicted / results.length)
