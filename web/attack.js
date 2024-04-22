@@ -16,10 +16,6 @@ function getTime() {
     return memDataView.getUint32(0, true);
 }
 
-function wait(n) {
-  for(let i = 0; i < n; i++) {}
-}
-
 class EvictionSetGenerator {
     constructor(dataView, config) {
         this.config = config;
@@ -246,6 +242,7 @@ self.onmessage = async (event) => {
     const get_time = wasmUtils.exports.get_time;
     const timed_access = wasmUtils.exports.timed_access;
     const evict = wasmUtils.exports.evict;
+    const wait = wasmUtils.exports.wait;
     const timed_hit = wasmUtils.exports.timed_hit;
     // const timed_hit = function(probe) {
     //     access(probe);
@@ -301,9 +298,10 @@ self.onmessage = async (event) => {
     console.log("total number of results:", total_num_results)
     const time_slot_size = BigInt(config.time_slot_size)
     const startTime = new Date();
+    const wait_cycles = BigInt(config.wait_cycles);
     encrypt();
     for(let i = 0; i < total_num_results; i += config.probe.length) {
-        const slotTime = wasmUtils.exports.get_time()
+        // const slotTime = wasmUtils.exports.get_time()
         for(let j = 0; j < config.probe.length; j++) {
             // wasmUtils.exports.access(config.page_size)
             const t = timed_access(config.probe[j]);
@@ -316,9 +314,10 @@ self.onmessage = async (event) => {
         }
         // if(i % 100 == 0) console.log(i)
         evict(conflictSet[0]);
-        do {
-            wait(config.wait_cycles);
-        } while (wasmUtils.exports.get_time() - slotTime < time_slot_size);
+        wait(wait_cycles, time_slot_size)
+        // do {
+            // wasmUtils.exports.wait(config.wait_cycles)
+        // } while (wasmUtils.exports.get_time() - slotTime < time_slot_size);
     }
     const testTime = new Date(new Date() - startTime);
     console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)

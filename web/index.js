@@ -138,7 +138,8 @@ async function start() {
     }
     console.log(results);
 
-    sendResults(results)
+    sendResults(results);
+    drawChart(results);
   };
 }
 

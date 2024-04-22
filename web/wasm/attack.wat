@@ -6,6 +6,24 @@
         i64.load
         local.set $data
     )
+    (func $wait (param $wait_cycles i64) (param $time_slot_size i64)
+        (local $t i64)
+        ;; get initial time
+        i32.const 256
+        atomic.fence
+        i64.atomic.load
+        local.set $t
+        (loop $iter
+            local.get $time_slot_size
+            i32.const 256
+            atomic.fence
+            i64.atomic.load
+            local.get $t
+            i64.sub
+            i64.gt_u 
+            (br_if $iter)
+        )
+    )
     (func $timed_access (param $victim i32) (result i64)
         (local $t0 i64)
         (local $t1 i64)
@@ -37,6 +55,7 @@
         i64.eqz
         i32.const 256
         i32.or
+        (; atomic.fence ;)
         i64.atomic.load
         local.set $t1
         local.get $t1
@@ -98,6 +117,7 @@
         i64.eqz
         i32.const 256
         i32.or
+        (; atomic.fence ;)
         i64.atomic.load
         local.set $t1
         local.get $t1
@@ -145,6 +165,7 @@
         i64.eqz
         i32.const 256
         i32.or
+        (; atomic.fence ;)
         i64.atomic.load
         local.set $t1
         local.get $t1
@@ -158,4 +179,5 @@
     (export "timed_hit" (func $timed_hit))
     (export "timed_miss" (func $timed_miss))
     (export "evict" (func $evict))
+    (export "wait" (func $wait))
 )

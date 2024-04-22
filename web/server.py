@@ -57,7 +57,7 @@ class MyServer(BaseHTTPRequestHandler):
             self.end_headers()
 
     def encrypt(self):
-        subprocess.getoutput("${GPG} --yes -e hello.txt")
+        subprocess.getoutput("/app/gpg/gnupg-1.4.13/g10/gpg --homedir /app/gpg/gpgtesthomedir --quiet -d /app/gpg/hello.txt.gpg")
 
     def send_file(self, filepath):
         with open(filepath, "rb") as f:

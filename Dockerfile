@@ -3,11 +3,6 @@ FROM debian:12.5
 # install and build requirements
 RUN apt update
 RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim curl wabt binaryen
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > ./install_rust.sh && chmod +x install_rust.sh && ./install_rust.sh -y
-ENV CARGO_BIN /root/.cargo/bin
-ENV PATH="${PATH}:${CARGO_BIN}"
-RUN rustup toolchain install nightly
-RUN rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
 # setup gpg key
 WORKDIR /app/gpg/
 ADD ./gpg/setup-gpg.sh /app/gpg/setup-gpg.sh
@@ -22,6 +17,6 @@ ADD . /app
 WORKDIR /app
 # build web app
 EXPOSE 8000
-# CMD bash -c "make attack build-bento parse compare; bash"
+CMD bash -c "make attack build-bento parse compare; bash"
 # CMD bash
-CMD bash -c "make serve"
+# CMD bash -c "make serve"
