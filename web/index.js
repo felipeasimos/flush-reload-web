@@ -138,7 +138,7 @@ async function start() {
     }
     console.log(results);
 
-    sendResults(results);
+    new Promise(() => sendResults(results));
     drawChart(results);
   };
 }

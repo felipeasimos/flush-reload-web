@@ -17,6 +17,6 @@ ADD . /app
 WORKDIR /app
 # build web app
 EXPOSE 8000
-CMD bash -c "make attack build-bento parse compare; bash"
+# CMD bash -c "make attack build-bento parse compare; bash"
 # CMD bash
-# CMD bash -c "make serve"
+CMD bash -c "make serve"
