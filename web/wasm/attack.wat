@@ -81,7 +81,7 @@
         i64.eqz
         i32.const 256
         i32.or
-        (; atomic.fence ;)
+        atomic.fence
         i32.atomic.load
         local.get $time
         i32.sub
@@ -117,7 +117,7 @@
         i64.eqz
         i32.const 256
         i32.or
-        (; atomic.fence ;)
+        atomic.fence
         i32.atomic.load
         local.get $time
         i32.sub

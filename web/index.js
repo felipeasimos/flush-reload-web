@@ -10,15 +10,12 @@ function sendResults(results) {
 function drawChart(results, config) {
   const labelStrings = ["Square", "Reduce", "Multiply"];
   const labels = config.probe.map((_, idx) => labelStrings[idx]);
-  console.log(results)
   const datasets = config.probe.map((_, dataset_idx) => {
-    console.log(dataset_idx)
     return {
       label: labels[dataset_idx],
       data: Array.from(results).map((d, idx) => ({ x: idx, y: d[dataset_idx]}))
     }
   })
-  console.log(datasets)
   new Chart(document.getElementById("results"), {
     type: "scatter",
     data: {

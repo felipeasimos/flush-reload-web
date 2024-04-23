@@ -144,14 +144,14 @@ class EvictionSetGenerator {
         let removedChunks = [];
         let backtrackCounter = 0;
         let level = 0;
-        for (let i = 0; i < evset.length; i++) {
-            const to_swap = Math.floor(Math.random() * (evset.length - 1));
-            const tmp = evset[i];
-            evset[i] = evset[to_swap];
-            evset[to_swap] = tmp;
-        }
-        this.setupLinkedList(evset);
         while(evset.length > this.config.associativity) {
+            for (let i = 0; i < evset.length; i++) {
+                const to_swap = Math.floor(Math.random() * (evset.length - 1));
+                const tmp = evset[i];
+                evset[i] = evset[to_swap];
+                evset[to_swap] = tmp;
+            }
+            this.setupLinkedList(evset);
             let found = false;
             let i = 0;
             for(; i < nchunks && !found; i++) {
@@ -228,7 +228,7 @@ function thresholdCalibration(timed_miss, timed_hit, probe, evset, numMeasuremen
 
 self.onmessage = async (event) => {
     const { memory, utils, config } = event.data;
-    config.probe = [config.probe[0]]
+    // config.probe = [config.probe[0]]
     const wasmUtils = new WebAssembly.Instance(utils, {
         env: {
             memory: memory,
@@ -281,13 +281,15 @@ self.onmessage = async (event) => {
     const num_addrs = 1; // config.probe.length
     const targets = [config.probe[0]]
     const evset_bases = new Uint32Array(evsets.map(e => e[0]))
-    // encrypt();
+    encrypt();
     for(let i = 0; i < total_num_results; i += num_addrs) {
         // const slotTime = wasmUtils.exports.get_time()
         for(let j = 0; j < num_addrs; j++) {
-
-            results[i + j] = timed_access(targets[j], evset_bases[j]);
-            evict(evset_bases[j]);
+            // access(targets[j])
+            // evict(evset_bases[j]);
+            // results[i + j] = timed_miss(targets[j], evset_bases[j])
+            results[i + j] = timed_access(targets[j]);
+            evict(evset_bases[j])
         }
         // evict(conflictSet[0]);
         // wait(wait_cycles, time_slot_size)
