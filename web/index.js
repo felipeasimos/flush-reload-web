@@ -7,38 +7,36 @@ function sendResults(results) {
     );
 }
 
-function drawChart(results) {
-    new Chart(document.getElementById("results"), {
-      type: "scatter",
-      data: {
-        labels: ["Square", "Reduce", "Multiply"],
-        datasets: [
-          {
-            label: "Square",
-            data: results.map((d, idx) => ({ x: idx, y: d[0] })),
-          },
-          {
-            label: "Reduce",
-            data: results.map((d, idx) => ({ x: idx, y: d[1] })),
-          },
-          {
-            label: "Multiply",
-            data: results.map((d, idx) => ({ x: idx, y: d[2] })),
-          },
-        ],
-      },
-      options: {
-        scales: {
-          y: {
-            max: 100,
-          },
-          x: {
-            type: "linear",
-            position: "bottom",
-          },
+function drawChart(results, config) {
+  const labelStrings = ["Square", "Reduce", "Multiply"];
+  const labels = config.probe.map((_, idx) => labelStrings[idx]);
+  console.log(results)
+  const datasets = config.probe.map((_, dataset_idx) => {
+    console.log(dataset_idx)
+    return {
+      label: labels[dataset_idx],
+      data: Array.from(results).map((d, idx) => ({ x: idx, y: d[dataset_idx]}))
+    }
+  })
+  console.log(datasets)
+  new Chart(document.getElementById("results"), {
+    type: "scatter",
+    data: {
+      labels: labels,
+      datasets: datasets,
+    },
+    options: {
+      scales: {
+        y: {
+          max: 100,
+        },
+        x: {
+          type: "linear",
+          position: "bottom",
         },
       },
-    });
+    },
+  });
 }
 
 async function getConfig() {
@@ -82,7 +80,9 @@ async function getMemory(config) {
   const candidatePoolSize = config.num_candidates * config.page_size;
   const webassemblyPageSize = 64 * 1024;
   const targetPtr = config.page_size + candidatePoolSize + (candidatePoolSize % config.page_size);
-  const memorySize = Math.ceil((targetPtr + target.byteLength) / webassemblyPageSize);
+  const resultsPtr = targetPtr + target.byteLength + (target.byteLength % config.page_size)
+  const resultsSize = 4 * config.time_slots * config.probe.length;
+  const memorySize = Math.ceil((resultsPtr + resultsSize) / webassemblyPageSize);
   console.log("memorySize (number of 64 KiB pages):", memorySize);
   const memory = new WebAssembly.Memory({
     initial: memorySize,
@@ -128,18 +128,15 @@ async function start() {
   });
 
   attackWorker.onmessage = (event) => {
-    const raw_results = event.data;
-    console.log(raw_results);
+    const {results: raw_results, config} = event.data;
     // divide into the time slots again
-    const chunk_size = 3;
+    const chunk_size = config.probe.length;
     let results = [];
     for (let i = 0; i < raw_results.length; i += chunk_size) {
       results.push(raw_results.slice(i, i + chunk_size));
     }
-    console.log(results);
-
     new Promise(() => sendResults(results));
-    drawChart(results);
+    drawChart(results, config);
   };
 }
 
