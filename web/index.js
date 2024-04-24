@@ -41,6 +41,7 @@ async function getConfig() {
   const configString = await response.text();
   const config = {
     threshold: 0,
+    minimal_miss_ratio: 0,
     wait_cycles: 0,
     time_slots: 0,
     time_slot_size: 0,
@@ -77,6 +78,9 @@ async function getMemory(config) {
   const candidatePoolSize = config.num_candidates * config.page_size;
   const webassemblyPageSize = 64 * 1024;
   const targetPtr = config.page_size + candidatePoolSize + (candidatePoolSize % config.page_size);
+  for(let i = 0; i < config.probe.length; i++) {
+    config.probe[i] += targetPtr
+  }
   const resultsPtr = targetPtr + target.byteLength + (target.byteLength % config.page_size)
   const resultsSize = 4 * config.time_slots * config.probe.length;
   const memorySize = Math.ceil((resultsPtr + resultsSize) / webassemblyPageSize);
@@ -95,10 +99,6 @@ async function getMemory(config) {
 async function start() {
   const config = await getConfig();
   const memory = await getMemory(config)
-  const candidatePoolSize = config.num_candidates * config.page_size;
-  for(let i = 0; i < config.probe.length; i++) {
-    config.probe[i] += config.page_size + candidatePoolSize + (candidatePoolSize % config.page_size)
-  }
   buffer = new DataView(memory.buffer);
 
   // get clock wasm started

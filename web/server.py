@@ -26,7 +26,7 @@ class MyServer(BaseHTTPRequestHandler):
             indices = [str(x) for x in range(row_len)]
             with open("../data/report.plot", "w") as f:
                 f.writelines([" ".join([str(row[i]) for i in indices]) + "\n" for row in post_body])
-            os.system("make -C ../utils build-bento parse compare")
+            os.system("make -C ../utils build-plunger parse compare")
             self.send_response(200)
             self.send_header("Cross-Origin-Opener-Policy", "same-origin")
             self.send_header("Cross-Origin-Embedder-Policy", "require-corp")

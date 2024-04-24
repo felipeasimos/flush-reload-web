@@ -1,5 +1,5 @@
 (module
-    (import "env" "memory" (memory 313 313 shared))
+    (import "env" "memory" (memory 326 326 shared))
     (func $access (param $offset i32)
         (local $data i64)
         local.get $offset
@@ -193,9 +193,9 @@
                 i32.eqz
                 local.get $victim
                 i32.or
-                i64.load
+                i32.load
                 ;; get_time
-                i64.eqz
+                i32.eqz
                 i32.const 256
                 i32.or
                 atomic.fence
@@ -223,6 +223,7 @@
             (loop $wait_iter
                 local.get $time_slot_size
                 i32.const 256
+                atomic.fence
                 i32.atomic.load
                 local.get $wait_time
                 i32.sub
