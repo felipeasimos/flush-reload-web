@@ -144,14 +144,14 @@ class EvictionSetGenerator {
         let removedChunks = [];
         let backtrackCounter = 0;
         let level = 0;
+        for (let i = 0; i < evset.length; i++) {
+            const to_swap = Math.floor(Math.random() * (evset.length - 1));
+            const tmp = evset[i];
+            evset[i] = evset[to_swap];
+            evset[to_swap] = tmp;
+        }
+        this.setupLinkedList(evset);
         while(evset.length > this.config.associativity) {
-            for (let i = 0; i < evset.length; i++) {
-                const to_swap = Math.floor(Math.random() * (evset.length - 1));
-                const tmp = evset[i];
-                evset[i] = evset[to_swap];
-                evset[to_swap] = tmp;
-            }
-            this.setupLinkedList(evset);
             let found = false;
             let i = 0;
             for(; i < nchunks && !found; i++) {
@@ -254,9 +254,9 @@ self.onmessage = async (event) => {
         console.log("evset[", i, "] created with size: ", evsets[i].length);
         evGenerator.setupLinkedList(evsets[i])
     }
-    // const conflictSet = evGenerator.generateConflictSet(evsets);
-    // console.log(conflictSet)
-    // console.log("conflict set created with size: ", conflictSet.length);
+    const conflictSet = evGenerator.generateConflictSet(evsets);
+    console.log(conflictSet)
+    console.log("conflict set created with size: ", conflictSet.length);
 
 
     const time_slot_size = config.time_slot_size
@@ -274,7 +274,7 @@ self.onmessage = async (event) => {
         memDataView.setUint32(victimsPtr + 4 * i, targets[i], true)
     }
     const startTime = new Date();
-    encrypt();
+    // encrypt();
     probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength, time_slot_size)
     // const results = new Uint32Array(total_num_results);
     // for(let i = 0; i < total_num_results; i += num_addrs) {
@@ -297,7 +297,8 @@ self.onmessage = async (event) => {
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true) < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
         // results[i] = 30 > value && value < 40 ? 1 : 0;
-        results[i] = value < config.threshold ? 1 : 0;
+        // results[i] = value < config.threshold ? 1 : 0;
+        results[i] = value
 
         if(results[i] > config.threshold) numEvicted++;
     }

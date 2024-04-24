@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// #define WITH_TIMING 1
 // #define WITH_EV 1
 
 #define wait(cycles) for (volatile uint64_t _i = 0; _i < cycles; _i++)
@@ -27,30 +26,18 @@ void spy(void **addrs, uint32_t num_addrs, uint16_t *results,
   uint32_t total_num_results = num_results * num_addrs;
   for (uint32_t slot_idx = 0; slot_idx < total_num_results; slot_idx += 3) {
     uint64_t start_time = rdtscp();
-#if defined(WITH_TIMING) && WITH_TIMING
     for (uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
       results[slot_idx + addr_idx] = probe(addrs[addr_idx]);
     }
     do {
       wait(wait_cycles);
     } while (rdtscp() - start_time < time_slot_size);
-#else
-    for (uint32_t addr_idx = 0; addr_idx < num_addrs; addr_idx++) {
-      results[slot_idx + addr_idx] |= probe(addrs[addr_idx]) < threshold;
-    }
-    do {
-      wait(wait_cycles);
-    } while (rdtscp() - start_time < time_slot_size);
-#endif
   }
 }
 
 int main(int argc, char **argv) {
 #if defined(WITH_EV)
   printf("WITH_EV: %d\n", WITH_EV);
-#endif
-#if defined(WITH_TIMING)
-  printf("WITH_TIMING: %d\n", WITH_TIMING);
 #endif
   Config config;
   if (parse_config(argc, argv, &config) == -1)
