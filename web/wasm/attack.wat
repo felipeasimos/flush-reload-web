@@ -1,12 +1,12 @@
 (module
-    (import "env" "memory" (memory 313 313 shared))
+    (import "env" "memory" (memory 326 326 shared))
     (func $access (param $offset i32)
         (local $data i64)
         local.get $offset
         i64.load
         local.set $data
     )
-    (func $wait (param $wait_cycles i32) (param $time_slot_size i32)
+    (func $wait (param $time_slot_size i32)
         (local $t i32)
         ;; get initial time
         i32.const 256
@@ -153,13 +153,13 @@
         )
         local.get $time
     )
-    (func $probe_loop (param $num_victims i32) (param $victims i32) (param $evsets i32) (param $results i32) (param $results_max i32)
+    (func $probe_loop (param $num_victims i32) (param $victims i32) (param $evsets i32) (param $results i32) (param $results_max i32) (param $time_slot_size i32)
         (local $victim_idx i32)
         (local $time i32)
         (local $victim i32)
         (local $evset i32)
         (local $td i32)
-
+        (local $t i32)
         local.get $num_victims
         i32.const 4
         i32.mul
@@ -214,6 +214,20 @@
                 ;; victim loop condition
                 (i32.lt_u (local.get $victim_idx) (local.get $num_victims))
                 (br_if $victim_iter)
+            )
+            ;; wait
+            i32.const 256
+            atomic.fence
+            i32.atomic.load
+            local.set $t
+            (loop $wait_iter
+                local.get $time_slot_size
+                i32.const 256
+                i32.atomic.load
+                local.get $t
+                i32.sub
+                i32.gt_u 
+                (br_if $wait_iter)
             )
             (i32.lt_u (local.get $results) (local.get $results_max))
             (br_if $result_iter)
