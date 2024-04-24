@@ -2,7 +2,7 @@
 build-docker:
 	docker build -t fr .
 run-docker-native: build-docker
-	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack build-bento parse compare && bash"
+	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack build-plunger parse compare && bash"
 run-docker-web: build-docker
 	docker run -it --rm -p 8000:8000 -v $$(pwd)/data:/app/data --name "fr" fr
 run-docker-evset:

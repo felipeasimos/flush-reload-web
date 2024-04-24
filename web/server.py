@@ -32,7 +32,6 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
             self.end_headers()
 
-
     def do_GET(self):
 
         filepath = Path("." + self.path)

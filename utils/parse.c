@@ -34,16 +34,13 @@ typedef struct Parser {
   uint8_t initialized;
 } Parser;
 
-int next(Parser* p, FILE* src, unsigned int threshold) {
+int next(Parser* p, FILE* src) {
   char buf[LINE_SIZE];
   memcpy(p->last, p->now, 3);
   unsigned int square, reduce, multiply;
-  if( 3 != fscanf(src, "%u %u %u", &square, &reduce, &multiply) ) {
+  if( 3 != fscanf(src, "%hhu %hhu %hhu", &p->now[S], &p->now[R], &p->now[M]) ) {
     return -1;
   }
-  p->now[S] = square < threshold;
-  p->now[R] = reduce < threshold;
-  p->now[M] = multiply < threshold;
   if(p->initialized) return 0;
   if(p->now[S] || p->now[R] || p->now[M]) {
     if(p->just_saw_a_hit) p->initialized = 1;
@@ -190,9 +187,9 @@ int parse_bento_square_reduce(Parser* p) {
 }
 #endif
 
-int parse(FILE* src, FILE* dest, unsigned int threshold) {
+int parse(FILE* src, FILE* dest) {
   Parser p = {0};
-  while( next(&p, src, threshold) != - 1) {
+  while( next(&p, src) != - 1) {
     int new_bit = -1;
 #if defined(BENTO)
     switch(p.state) {
@@ -278,17 +275,16 @@ int parse(FILE* src, FILE* dest, unsigned int threshold) {
 }
 
 void usage() {
-  printf("usage: parser SRC DEST THRESHOLD\n");
+  printf("usage: parser SRC DEST\n");
 }
 
 int main(int argc, char** argv) {
-  if(argc < 4) {
+  if(argc < 3) {
     printf("ERROR: not enough arguments\n");
     goto error;
   }
 
   FILE* src = NULL, *dest = NULL;
-  unsigned int threshold = 0;
   if(( src = fopen(argv[1], "r") ) == NULL ) {
     printf("ERROR: couldn't open source file\n");
     goto error;
@@ -299,12 +295,7 @@ int main(int argc, char** argv) {
     goto error;
   }
 
-  if(( sscanf(argv[3], "%u", &threshold) != 1 )) {
-    printf("ERROR: couldn't parse threshold\n");
-    goto error;
-  }
-
-  if( parse(src, dest, threshold) == -1 ) {
+  if( parse(src, dest) == -1 ) {
     printf("ERROR: parsing failed!\n");
     goto error;
   }

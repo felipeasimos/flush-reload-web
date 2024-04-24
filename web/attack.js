@@ -301,8 +301,8 @@ self.onmessage = async (event) => {
     let numEvicted = 0
     for(let i = 0; i < results.length; i++) {
         const value = memDataView.getUint32(resultsPtr + 4 * i, true)
-        results[i] = value
-        // results[i] =  value < config.threshold ? 1 : 0;
+        // results[i] = value
+        results[i] = value < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true) < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
         // results[i] = 30 > value && value < 40 ? 1 : 0;
