@@ -159,13 +159,17 @@
         (local $victim i32)
         (local $evset i32)
         (local $td i32)
-        (local $t i32)
+        (local $wait_time i32)
         local.get $num_victims
         i32.const 4
         i32.mul
         local.set $num_victims
         (loop $result_iter
             (local.set $victim_idx (i32.const 0))
+            i32.const 256
+            atomic.fence
+            i32.atomic.load
+            local.set $wait_time
             (loop $victim_iter
                 ;; get victim address
                 local.get $victims
@@ -216,15 +220,11 @@
                 (br_if $victim_iter)
             )
             ;; wait
-            i32.const 256
-            atomic.fence
-            i32.atomic.load
-            local.set $t
             (loop $wait_iter
                 local.get $time_slot_size
                 i32.const 256
                 i32.atomic.load
-                local.get $t
+                local.get $wait_time
                 i32.sub
                 i32.gt_u 
                 (br_if $wait_iter)
