@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
   }
 #endif
 
+  system("(echo 'GPG start'; ${GPG}  --quiet -d ${TARGET_FILE} > /dev/null; echo 'GPG end') &");
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
   spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles,
       config.time_slot_size, config.threshold);

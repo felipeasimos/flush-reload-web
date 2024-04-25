@@ -93,6 +93,7 @@ async function getMemory(config) {
   // load target to memory
   const memoryRegion = new Uint8Array(memory.buffer, targetPtr, target.byteLength);
   memoryRegion.set(target)
+  console.log("target:", memoryRegion)
   return memory;
 }
 
@@ -142,6 +143,6 @@ function getTime() {
 }
 
 window.onload = () => {
-  document.getElementById("btn-start-attack").onclick = start;
   document.getElementById("btn-get-time").onclick = getTime;
+  start()
 };

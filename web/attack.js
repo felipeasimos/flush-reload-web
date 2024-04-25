@@ -237,7 +237,6 @@ function thresholdCalibration(timed_miss, timed_hit, probe, evset, numMeasuremen
 
 self.onmessage = async (event) => {
     const { memory, utils, config } = event.data;
-    // config.probe = [config.probe[0]]
     const wasmUtils = new WebAssembly.Instance(utils, {
         env: {
             memory: memory,
@@ -250,6 +249,8 @@ self.onmessage = async (event) => {
     const probe_loop = wasmUtils.exports.probe_loop;
     const probe = wasmUtils.exports.probe;
     const wait = wasmUtils.exports.wait;
+    const timed_access = wasmUtils.exports.timed_access;
+    const evict = wasmUtils.exports.evict;
 
     console.log("evGenerator created")
     let candidates = evGenerator.generateCandidateSet(config.probe[0], timed_miss);
@@ -263,9 +264,9 @@ self.onmessage = async (event) => {
         console.log("evset[", i, "] created with size: ", evsets[i].length);
         evGenerator.setupLinkedList(evsets[i])
     }
-    // const conflictSet = evGenerator.generateConflictSet(evsets);
-    // console.log(conflictSet)
-    // console.log("conflict set created with size: ", conflictSet.length);
+    const conflictSet = evGenerator.generateConflictSet(evsets);
+    console.log(conflictSet)
+    console.log("conflict set created with size: ", conflictSet.length);
 
 
     const time_slot_size = config.time_slot_size
@@ -283,26 +284,26 @@ self.onmessage = async (event) => {
         memDataView.setUint32(victimsPtr + 4 * i, targets[i], true)
     }
     const startTime = new Date();
-    encrypt();
-    probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength, time_slot_size)
+    // encrypt();
+    // probe_loop(num_addrs, victimsPtr, evsetsPtr, resultsPtr, memDataView.byteLength, time_slot_size)
     const results = new Uint32Array(total_num_results);
-    // for(let i = 0; i < total_num_results; i += num_addrs) {
-    //     for(let j = 0; j < num_addrs; j++) {
-    //         // access(targets[j])
-    //         // evict(evset_bases[j]);
-    //         // results[i + j] = timed_miss(targets[j], evset_bases[j])
-    //         results[i + j] = probe(targets[j], evset_bases[j]);
-    //     }
-    //     // evict(conflictSet[0]);
-    //     wait(time_slot_size)
-    // }
+    for(let i = 0; i < total_num_results; i += num_addrs) {
+        for(let j = 0; j < num_addrs; j++) {
+            // access(targets[j])
+            // evict(evset_bases[j]);
+            // results[i + j] = timed_miss(targets[j], evset_bases[j])
+            memDataView.setUint32(resultsPtr + 4 * (i + j), timed_access(targets[j]), true)
+        }
+        evict(conflictSet[0]);
+        // wait(time_slot_size)
+    }
     const testTime = new Date(new Date() - startTime);
     console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)
     let numEvicted = 0
     for(let i = 0; i < results.length; i++) {
         const value = memDataView.getUint32(resultsPtr + 4 * i, true)
-        // results[i] = value
-        results[i] = value < config.threshold ? 1 : 0;
+        results[i] = value
+        // results[i] = value < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true) < config.threshold ? 1 : 0;
         // results[i] = memDataView.getUint32(resultsPtr + 4 * i, true)
         // results[i] = 30 > value && value < 40 ? 1 : 0;

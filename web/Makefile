@@ -10,3 +10,5 @@ serve: build
 	python3 server.py
 show:
 	wasm2wat --enable-threads attack.wasm | less -R
+attack: build
+	./run-attack.sh

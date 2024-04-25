@@ -2,13 +2,17 @@
 build-docker:
 	docker build -t fr .
 run-docker-native: build-docker
-	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack build-plunger parse compare && bash"
-run-docker-web: build-docker
-	docker run -it --rm -p 8000:8000 -v $$(pwd)/data:/app/data --name "fr" fr
+	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack build-bento parse compare && bash"
+run-docker-web-attack: build-docker
+	docker run -it --rm -p 8000:8000 -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make attack-web"
+run-docker-web-serve: build-docker
+	docker run -it -p 8000:8000 --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make serve"
 run-docker-evset:
 	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make evset && bash"
 evset:
 	$(MAKE) -C native evset
+attack-web:
+	$(MAKE) -C web attack
 serve:
 	$(MAKE) -C web serve
 objdump:
