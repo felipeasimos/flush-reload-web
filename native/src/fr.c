@@ -17,6 +17,7 @@
 #if defined(WITH_EV) && WITH_EV
 static inline __attribute__((always_inline)) uint64_t probe(uint8_t *p, void* evset) {
   volatile uint64_t t = load_time(p);
+  fence();
   traverse(evset);
   fence();
   return t;
@@ -30,7 +31,15 @@ static inline __attribute__((always_inline)) uint64_t probe(uint8_t *p) {
 }
 #endif
 
-void spy(void **addrs, uint32_t num_addrs, uint16_t *results,
+#if defined(WITH_TIMING) && WITH_TIMING
+typedef uint16_t result_type;
+#define SCANF_RESULT_STR "%hu"
+#else
+typedef uint8_t result_type;
+#define SCANF_RESULT_STR "%hhu"
+#endif
+
+void spy(void **addrs, uint32_t num_addrs, result_type *results,
          uint32_t num_results, uint64_t wait_cycles, uint64_t time_slot_size,
          uint64_t threshold, void** evsets) {
   uint32_t total_num_results = num_results * num_addrs;
@@ -48,7 +57,7 @@ void spy(void **addrs, uint32_t num_addrs, uint16_t *results,
 #if defined(WITH_TIMING) && WITH_TIMING
       results[slot_idx + addr_idx] = t;
 #else
-      results[slot_idx + addr_idx] = t < threshold;
+      results[slot_idx + addr_idx] |= t < threshold;
 #endif
     }
 #if !defined(WITH_EV) || !WITH_EV
@@ -78,8 +87,8 @@ int main(int argc, char **argv) {
   void *addrs[config.num_addrs];
   memcpy(addrs, config.addrs, config.num_addrs * sizeof(unsigned long *));
   uint32_t total_results = config.num_addrs * config.time_slots;
-  uint16_t results[total_results];
-  memset(results, 0x00, total_results * sizeof(uint16_t));
+  result_type results[total_results];
+  memset(results, 0x00, total_results * sizeof(result_type));
 
   printf("num_addrs: %lu\n", config.num_addrs);
   printf("mmap_base: %p\n", config.mmap_base);
@@ -140,9 +149,8 @@ int main(int argc, char **argv) {
     goto report_error;
   }
   for (uint32_t i = 0; i < total_results; i += config.num_addrs) {
-    fprintf(report, "%hu", results[i]);
-    for (size_t j = 1; j < config.num_addrs; j++) {
-      fprintf(report, " %hu", results[i + j]);
+    for (size_t j = 0; j < config.num_addrs; j++) {
+      fprintf(report, " " SCANF_RESULT_STR, results[i + j]);
     }
     fprintf(report, "\n");
   }
