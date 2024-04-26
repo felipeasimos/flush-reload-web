@@ -21,7 +21,11 @@ unsigned int get_threshold(void* target) {
 
 int main(int argc, char** argv) {
   Config config;
-  if (parse_config(argc, argv, &config) == -1) return 1;
+  if(argc < 2) {
+    printf("ERROR: not enough arguments");
+    return 1;
+  }
+  if (parse_config(argv[1], &config) == -1) return 1;
   printf("num_measurements: %lu\n", config.num_measurements);
   printf("num_candidates: %lu\n", config.num_candidates);
   printf("page_size: %lu\n", config.page_size);

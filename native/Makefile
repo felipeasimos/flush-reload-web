@@ -1,6 +1,6 @@
 .PHONY: build-native run-attack build-finder build-attack
 build-attack:
-	gcc src/fr.c src/config.c src/ev.c src/arr.c -DWITH_TIMING=0 -DWITH_EV=0 -O0 -o fr
+	gcc src/fr.c src/config.c src/ev.c src/arr.c -DWITH_TIMING=0 -DWITH_EV=1 -O0 -o fr
 build-probe:
 	gcc src/fr.c src/config.c -O2 -o fr
 build-finder:

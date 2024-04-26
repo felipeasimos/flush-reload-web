@@ -27,15 +27,11 @@ do {\
   }\
 } while(0);
 
-int parse_config(int argc, char** argv, Config* config) {
+int parse_config(char* path_to_config, Config* config) {
   char target_filename[BUFFER_SIZE];
   memset(config, 0x00, sizeof(Config));
   FILE* config_file = NULL;
-  if(argc < 2) {
-    printf("ERROR: not enough arguments\n");
-    goto error;
-  }
-  if(( config_file = fopen(argv[1], "r")) == NULL ) {
+  if(( config_file = fopen(path_to_config, "r")) == NULL ) {
     printf("ERROR: couldn't open config file\n");
     goto error;
   }
@@ -46,6 +42,8 @@ int parse_config(int argc, char** argv, Config* config) {
     size_t size = space - buf;
     PARSE(wait_cycles, "%lu", (unsigned long*));
     PARSE(threshold, "%lu", (unsigned long*));
+    PARSE(minimal_miss_ratio, "%f", (float*))
+    PARSE(gpg_delay_secs, "%f", (float*))
     PARSE(time_slots, "%lu", (unsigned long*));
     PARSE(time_slot_size, "%lu", (unsigned long*));
     PARSE(page_size, "%lu", (unsigned long*));

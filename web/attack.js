@@ -80,7 +80,7 @@ class EvictionSetGenerator {
                 miss++;
             }
         }
-        const miss_ratio = miss / (hit + miss)
+        const miss_ratio = miss / num_measurements
         return [t / this.config.num_measurements, miss_ratio];
     }
     setupLinkedList(indices) {
@@ -264,9 +264,9 @@ self.onmessage = async (event) => {
         console.log("evset[", i, "] created with size: ", evsets[i].length);
         evGenerator.setupLinkedList(evsets[i])
     }
-    const conflictSet = evGenerator.generateConflictSet(evsets);
-    console.log(conflictSet)
-    console.log("conflict set created with size: ", conflictSet.length);
+    // const conflictSet = evGenerator.generateConflictSet(evsets);
+    // console.log(conflictSet)
+    // console.log("conflict set created with size: ", conflictSet.length);
 
 
     const time_slot_size = config.time_slot_size
@@ -293,8 +293,9 @@ self.onmessage = async (event) => {
             // evict(evset_bases[j]);
             // results[i + j] = timed_miss(targets[j], evset_bases[j])
             memDataView.setUint32(resultsPtr + 4 * (i + j), timed_access(targets[j]), true)
+            evict(evset_bases[j])
         }
-        evict(conflictSet[0]);
+        // evict(conflictSet[0]);
         // wait(time_slot_size)
     }
     const testTime = new Date(new Date() - startTime);

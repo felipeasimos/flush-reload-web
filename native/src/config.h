@@ -13,6 +13,8 @@ typedef struct Config {
   uint64_t time_slot_size;
   size_t num_addrs;
   void* candidate_pool;
+  float minimal_miss_ratio;
+  float gpg_delay_secs;
   uint64_t num_measurements;
   uint64_t num_candidates;
   uint64_t num_backtracks;
@@ -24,7 +26,7 @@ typedef struct Config {
   void* mmap_base;
 } Config;
 
-int parse_config(int argc, char** argv, Config* config);
+int parse_config(char* path_to_config, Config* config);
 void free_config(Config* config);
 void usage();
 

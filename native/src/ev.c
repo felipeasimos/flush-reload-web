@@ -28,10 +28,19 @@ Arr generate_candidate_set(Config* config, void* target) {
     // validate
     if(target) {
       unsigned int t = 0;
+      unsigned int hit = 0;
+      unsigned int miss = 0;
       for(unsigned int i = 0; i < config->num_measurements; i++) {
-        t += timed_miss(arr.arr[0], target);
+        const unsigned int a = timed_miss(arr.arr[0], target);
+        if(a < config->threshold) {
+          hit++;
+        } else {
+          miss++;
+        }
+        t += a;
       }
-      evicted = config->threshold < (t / config->num_measurements);
+      const unsigned int miss_ratio = (float)miss / config->num_measurements;
+      evicted = config->threshold < (t / config->num_measurements) && miss_ratio >= config->minimal_miss_ratio;
       if(!evicted) {
         printf(".");
         fflush(stdout);
@@ -104,9 +113,20 @@ Arr generate_eviction_set(Config* config, void* probe, Arr cand) {
     for(; i < nchunks; i++) {
       arr_unlink_chunk(&ev, &removed_chunks, nchunks, i);
       unsigned int t = 0;
-      for(unsigned int i = 0; i < config->num_measurements; i++) t += timed_miss(ev.arr[0], probe);
+      unsigned int miss = 0;
+      unsigned int hit = 0;
+      for(unsigned int i = 0; i < config->num_measurements; i++) {
+        const unsigned int a = timed_miss(ev.arr[0], probe);
+        if(a < config->threshold) {
+          hit++;
+        } else {
+          miss++;
+        }
+        t += a;
+      }
       t /= config->num_measurements;
-      if(t < config->threshold) {
+      const float miss_ratio = (float)miss / config->num_measurements;
+      if(t < config->threshold || miss < config->minimal_miss_ratio) {
         arr_relink_chunk(&ev, &removed_chunks, nchunks);
       } else {
         printf("-");
