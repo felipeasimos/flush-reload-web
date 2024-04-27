@@ -237,6 +237,7 @@ function thresholdCalibration(timed_miss, timed_hit, probe, evset, numMeasuremen
 
 self.onmessage = async (event) => {
     const { memory, utils, config } = event.data;
+    config.probe = [config.probe[0]]
     const wasmUtils = new WebAssembly.Instance(utils, {
         env: {
             memory: memory,
@@ -292,13 +293,15 @@ self.onmessage = async (event) => {
             // access(targets[j])
             // evict(evset_bases[j]);
             // results[i + j] = timed_miss(targets[j], evset_bases[j])
-            memDataView.setUint32(resultsPtr + 4 * (i + j), timed_access(targets[j]), true)
-            evict(evset_bases[j])
+            // memDataView.setUint32(resultsPtr + 4 * (i + j), timed_access(targets[j]), true)
+            memDataView.setUint32(resultsPtr + 4 * (i + j), timed_miss(targets[j], evset_bases[j]), true)
+            // evict(evset_bases[j])
         }
         // evict(conflictSet[0]);
         // wait(time_slot_size)
     }
-    const testTime = new Date(new Date() - startTime);
+    const endTime = new Date()
+    const testTime = new Date(endTime - startTime);
     console.log(`test took: ${testTime.getMinutes()} mins, ${testTime.getSeconds()} secs and ${testTime.getMilliseconds()} ms`)
     let numEvicted = 0
     for(let i = 0; i < results.length; i++) {
@@ -310,7 +313,7 @@ self.onmessage = async (event) => {
         // results[i] = 30 > value && value < 40 ? 1 : 0;
         // results[i] = value < config.threshold ? 1 : 0;
 
-        if(results[i] > config.threshold) numEvicted++;
+        if(results[i] >= config.threshold) numEvicted++;
     }
     console.log("numEvicted:", numEvicted)
     console.log("percentage evicted:", numEvicted / results.length)

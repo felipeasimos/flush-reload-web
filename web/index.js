@@ -7,7 +7,7 @@ function sendResults(results) {
     );
 }
 
-function drawChart(results, config) {
+function drawChart(results, config, canvasID) {
   const labelStrings = ["Square", "Reduce", "Multiply"];
   const labels = config.probe.map((_, idx) => labelStrings[idx]);
   const datasets = config.probe.map((_, dataset_idx) => {
@@ -16,7 +16,7 @@ function drawChart(results, config) {
       data: Array.from(results).map((d, idx) => ({ x: idx, y: d[dataset_idx]}))
     }
   })
-  new Chart(document.getElementById("results"), {
+  new Chart(document.getElementById(canvasID), {
     type: "scatter",
     data: {
       labels: labels,
@@ -133,8 +133,14 @@ async function start() {
     for (let i = 0; i < raw_results.length; i += chunk_size) {
       results.push(raw_results.slice(i, i + chunk_size));
     }
+    drawChart(results, config, "results-raw");
+    for(let i = 0; i < config.time_slots; i++) {
+      for(let j = 0; j < results[0].length; j++) {
+        results[i][j] = results[i][j] < config.threshold ? 1 : 0;
+      }
+    }
+    drawChart(results, config, "results");
     new Promise(() => sendResults(results));
-    drawChart(results, config);
   };
 }
 
