@@ -1,5 +1,5 @@
 (module
-    (import "env" "memory" (memory 588 588 shared))
+    (import "env" "memory" (memory 295 295 shared))
     (func $access (param $offset i32)
         (local $data i64)
         local.get $offset
@@ -58,7 +58,7 @@
         i64.eqz
         i32.const 256
         i32.or
-        (; atomic.fence ;)
+        atomic.fence
         i64.atomic.load
         local.get $t0
         i64.sub

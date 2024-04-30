@@ -237,7 +237,6 @@ function thresholdCalibration(timed_miss, timed_hit, probe, evset, numMeasuremen
 
 self.onmessage = async (event) => {
     const { memory, utils, config } = event.data;
-    config.probe = [config.probe[0]]
     const wasmUtils = new WebAssembly.Instance(utils, {
         env: {
             memory: memory,
@@ -262,6 +261,7 @@ self.onmessage = async (event) => {
         do {
             evsets[i] = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[i])
         } while(evsets[i].length > config.associativity);
+        evsets[i].sort()
         console.log("evset[", i, "] created with size: ", evsets[i].length);
         evGenerator.setupLinkedList(evsets[i])
     }
