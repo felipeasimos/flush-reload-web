@@ -1,16 +1,19 @@
-threshold 170
+threshold 100
 minimal_miss_ratio 1
-wait_cycles 100
-time_slots 5000
-gpg_delay 0.001
-time_slot_size 2000
+wait_cycles 0
+time_slots 10000
+gpg_delay 0.01
+time_slot_size 250
 target_file ../gpg/gnupg-1.4.13/g10/gpg
 # target_file ../data/gpg
-num_measurements 500
+num_measurements 5000
 page_size 4096
 num_candidates 4000
-num_backtracks 100
+num_backtracks 50
 associativity 12
 probe 0x9c681
 probe 0x9b597
 probe 0x9c182
+# probe 0x9c552
+# probe 0x9b7e3
+# probe 0x9ccc0

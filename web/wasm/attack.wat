@@ -86,6 +86,36 @@
         local.get $time
         i32.sub
     )
+    (func $timed_access_evset (param $evset i32) (result i32)
+        (local $time i32)
+        (local $td i32)
+        i32.const 256
+        atomic.fence
+        i32.atomic.load
+        local.set $time
+        (; (call $access (local.get $victim)) ;)
+        local.get $time
+        i32.eqz
+        local.get $evset
+        i32.or
+        i32.load
+        ;; traverse
+        (local.set $td)
+        (loop $iter
+            (local.set $td (i32.load (local.get $td)))
+            (br_if $iter (local.get $td))
+        )
+        (local.get $td)
+        (; local.set $data ;)
+        ;; get_time
+        (; local.get $data ;)
+        i32.const 256
+        i32.or
+        atomic.fence
+        i32.atomic.load
+        local.get $time
+        i32.sub
+    )
     (func $timed_miss (param $victim i32) (param $linked_list i32) (result i32)
         (local $time i32)
         (local $td i32)
@@ -200,6 +230,7 @@
                 i32.or
                 atomic.fence
                 i32.atomic.load
+                ;; subtração dos valores temporais
                 local.get $time
                 i32.sub
                 local.set $time
@@ -237,6 +268,7 @@
     (export "get_time" (func $get_time))
     (export "access" (func $access))
     (export "timed_access" (func $timed_access))
+    (export "timed_access_evset" (func $timed_access_evset))
     (export "timed_hit" (func $timed_hit))
     (export "timed_miss" (func $timed_miss))
     (export "evict" (func $evict))

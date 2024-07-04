@@ -25,7 +25,7 @@ function drawChart(results, config, canvasID) {
     options: {
       scales: {
         y: {
-          max: 100,
+          max: 200,
         },
         x: {
           type: "linear",

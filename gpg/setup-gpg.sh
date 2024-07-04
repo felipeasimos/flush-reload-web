@@ -6,7 +6,7 @@ wget ftp://ftp.gnupg.org/gcrypt/gnupg/gnupg-1.4.13.tar.bz2
 tar -xvf gnupg-1.4.13.tar.bz2
 cd gnupg-1.4.13
 # build it
-./configure "CFLAGS=-g -O2" "LDFLAGS=-z muldefs" --prefix="${PWD}"
+./configure "CFLAGS=-O2 -g" "LDFLAGS=-z muldefs" --prefix="${PWD}"
 make
 # check and install (installation is done at the prefix)
 # we end up with an up to date version of gpg and the old vulnerable one at the prefix

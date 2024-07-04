@@ -1,8 +1,7 @@
 FROM debian:12.5
 
 # install and build requirements
-RUN apt update
-RUN apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim curl wabt binaryen firefox-esr
+RUN apt update && apt install -y wget bzip2 gcc-multilib make pgpdump gnuplot python3 less vim curl wabt binaryen firefox-esr
 # setup gpg key
 WORKDIR /app/gpg/
 ADD ./gpg/setup-gpg.sh /app/gpg/setup-gpg.sh

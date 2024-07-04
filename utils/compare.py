@@ -44,6 +44,16 @@ def levensthein(list1, list2):
     return matrix[len(list1)][len(list2)], matrix[len(list1)][len(list2)]/len(list2)
 
 
+def naive_percentage(parsed, answer):
+    len_diff = abs(len(parsed) - len(answer))
+    len_min = min(len(parsed), len(answer))
+    recovered_bits = 0
+    for i in range(len_min):
+        if parsed[:len_min][i] == answer[:len_min][i]:
+            recovered_bits += 1
+    return (recovered_bits)/len(answer), len_diff
+
+
 def main():
     symbols = {
         'd': "",
@@ -64,13 +74,17 @@ def main():
     dp = "{0:{size}b}".format(d % (p-1), size=1024).strip()
     dq = "{0:{size}b}".format(d % (q-1), size=1024).strip()
     print("levensthein:", levensthein(parsed, dp + dq))
-    print("LCS:", LCS(parsed, dp + dq))
+    # print("LCS:", LCS(parsed, dp + dq))
+    print("naive percentage:", naive_percentage(parsed, dp + dq)[0])
 
-    half = (len(parsed)//2)
-    print("LCS with dp:", LCS(parsed[half:], dp))
-    print("LCS with dq:", LCS(parsed[:half], dp))
-    print("levensthein with dp:", levensthein(parsed[half:], dp))
-    print("levensthein with dq:", levensthein(parsed[:half], dp))
+    # half = (len(parsed)//2)
+    # print("LCS with dp:", LCS(parsed[half:], dp))
+    # print("LCS with dq:", LCS(parsed[:half], dq))
+    # print("levensthein with dp:", levensthein(parsed[half:], dp))
+    # print("levensthein with dq:", levensthein(parsed[:half], dp))
+    # print("naive percentage with dp:", naive_percentage(parsed[half:], dp))
+    # print("naive percentage with dq:", naive_percentage(parsed[:half], dq))
+
 
 if __name__ == "__main__":
     main()

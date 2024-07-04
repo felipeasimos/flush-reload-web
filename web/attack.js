@@ -235,23 +235,9 @@ function thresholdCalibration(timed_miss, timed_hit, probe, evset, numMeasuremen
     return ((2*hit_median) + miss_median)/3
 }
 
-self.onmessage = async (event) => {
-    const { memory, utils, config } = event.data;
-    const wasmUtils = new WebAssembly.Instance(utils, {
-        env: {
-            memory: memory,
-        },
-    });
-    memDataView = new DataView(memory.buffer);
-    let evGenerator = new EvictionSetGenerator(memDataView, config);
+function generate_evsets(config, timed_miss, memDataView) {
 
-    const timed_miss = wasmUtils.exports.timed_miss;
-    const probe_loop = wasmUtils.exports.probe_loop;
-    const probe = wasmUtils.exports.probe;
-    const wait = wasmUtils.exports.wait;
-    const timed_access = wasmUtils.exports.timed_access;
-    const evict = wasmUtils.exports.evict;
-
+    const evGenerator = new EvictionSetGenerator(memDataView, config);
     console.log("evGenerator created")
     let candidates = evGenerator.generateCandidateSet(config.probe[0], timed_miss);
     console.log("candidate set created with size: ", candidates.length);
@@ -261,17 +247,38 @@ self.onmessage = async (event) => {
         do {
             evsets[i] = evGenerator.reduceToEvictionSet(timed_miss, candidates, config.probe[i])
         } while(evsets[i].length > config.associativity);
-        evsets[i].sort()
         console.log("evset[", i, "] created with size: ", evsets[i].length);
         evGenerator.setupLinkedList(evsets[i])
     }
+    return evsets
+}
+
+self.onmessage = async (event) => {
+    const { memory, utils, config } = event.data;
+    const wasmUtils = new WebAssembly.Instance(utils, {
+        env: {
+            memory: memory,
+        },
+    });
+    memDataView = new DataView(memory.buffer);
+
+    const probe_loop = wasmUtils.exports.probe_loop;
+    const probe = wasmUtils.exports.probe;
+    const wait = wasmUtils.exports.wait;
+    const access = wasmUtils.exports.access;
+    const timed_access = wasmUtils.exports.timed_access;
+    const evict = wasmUtils.exports.evict;
+    const timed_access_evset = wasmUtils.exports.timed_access_evset;
+    const timed_miss = wasmUtils.exports.timed_miss;
+
+    const evsets = generate_evsets(config, timed_miss, memDataView)
+    console.log(evsets)
     // const conflictSet = evGenerator.generateConflictSet(evsets);
     // console.log(conflictSet)
     // console.log("conflict set created with size: ", conflictSet.length);
 
 
     const time_slot_size = config.time_slot_size
-    const wait_cycles = config.wait_cycles;
     const num_addrs = config.probe.length;
     const targets = new Uint32Array(config.probe);
     const evset_bases = new Uint32Array(evsets.map(e => e[0]))
@@ -290,12 +297,14 @@ self.onmessage = async (event) => {
     const results = new Uint32Array(total_num_results);
     for(let i = 0; i < total_num_results; i += num_addrs) {
         for(let j = 0; j < num_addrs; j++) {
-            // access(targets[j])
+            access(targets[j])
             // evict(evset_bases[j]);
             // results[i + j] = timed_miss(targets[j], evset_bases[j])
+            memDataView.setUint32(resultsPtr + 4 * (i + j), timed_access(evset_bases[j]), true)
             // memDataView.setUint32(resultsPtr + 4 * (i + j), timed_access(targets[j]), true)
-            memDataView.setUint32(resultsPtr + 4 * (i + j), timed_miss(targets[j], evset_bases[j]), true)
-            // evict(evset_bases[j])
+
+            // memDataView.setUint32(resultsPtr + 4 * (i + j), timed_miss(targets[j], evset_bases[j]), true)
+            evict(evset_bases[j])
         }
         // evict(conflictSet[0]);
         // wait(time_slot_size)
