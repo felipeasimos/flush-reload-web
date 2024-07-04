@@ -6,7 +6,7 @@
 #include "fr.h"
 #include "config.h"
 
-Arr generate_candidate_set(Config* config, void* target);
+Arr generate_candidate_set(Config* config, unsigned int target_idx);
 Arr generate_eviction_set(Config* config, void* probe, Arr cand);
 Arr generate_conflict_set(Arr* evs, unsigned long nevs);
 

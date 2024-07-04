@@ -27,7 +27,9 @@ do {\
   }\
 } while(0);
 
-int parse_config(char* path_to_config, Config* config) {
+int parse_config(char* path_to_config, Config** _config) {
+  *_config = malloc(sizeof(Config));
+  Config* config = *_config;
   char target_filename[BUFFER_SIZE];
   memset(config, 0x00, sizeof(Config));
   FILE* config_file = NULL;
@@ -51,7 +53,6 @@ int parse_config(char* path_to_config, Config* config) {
     PARSE(num_measurements, "%lu", (unsigned long*));
     PARSE(num_backtracks, "%lu", (unsigned long*));
     PARSE(associativity, "%lu", (unsigned long*));
-    // PARSE(candidate_pool, "%p", (void**));
     if( CHECK_IF_FIELD("probe") ) {
       config->addrs = realloc(config->addrs, (++config->num_addrs) * sizeof(void*));
       SSCANF(addrs[config->num_addrs-1], "%lX", (unsigned long*));
@@ -87,18 +88,25 @@ int parse_config(char* path_to_config, Config* config) {
     goto error;
   }
   // get mmap memory for candidate pool
-  config->candidate_pool = mmap(NULL, config->num_candidates * config->page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  config = realloc(config, sizeof(Config) + sizeof(void*) * config->num_addrs);
+  for(unsigned int i = 0; i < config->num_addrs; i++) {
+    config->candidate_pools[i] = mmap(NULL, config->num_candidates * config->page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  }
   // update addresses
   for(uint32_t i = 0; i < config->num_addrs; i++) config->addrs[i] += (size_t)config->mmap_base;
+  *_config = config;
   return 0;
 error:
   usage();
+  *_config = config;
   return -1;
 }
 
 void free_config(Config* config) {
   if(config->mmap_base) munmap(config->mmap_base, config->file_stat.st_size);
-  if(config->candidate_pool) munmap(config->candidate_pool, config->num_candidates * config->page_size);
+  for(unsigned int i = 0; i < config->num_addrs; i++) {
+    if(config->candidate_pools[i]) munmap(config->candidate_pools[i], config->num_candidates * config->page_size);
+  }
   if(config->fd) {
     close(config->fd);
   }
@@ -106,4 +114,5 @@ void free_config(Config* config) {
   config->addrs = NULL;
   config->num_addrs = config->fd = 0;
   config->mmap_base = NULL;
+  free(config);
 } 

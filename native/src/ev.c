@@ -7,8 +7,9 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-Arr generate_candidate_set(Config* config, void* target) {
+Arr generate_candidate_set(Config* config, unsigned int target_idx) {
   srand(time(0));
+  void* target = config->addrs[target_idx];
   const size_t pool_size = config->num_candidates * config->page_size;
   unsigned int page_offset = ((unsigned long)(target) & (config->page_size-1));
   uint8_t evicted = 0;
@@ -16,7 +17,7 @@ Arr generate_candidate_set(Config* config, void* target) {
   do {
     arr = arr_init(config->num_candidates);
     // populate array of candidate indices
-    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pool + (i * config->page_size) + page_offset;
+    for(unsigned long i = 0; i < arr.len; i++) arr.arr[i] = config->candidate_pools[target_idx] + (i * config->page_size) + page_offset;
     // swap indices around
     for(unsigned int i = 0; i < arr.len; i++) {
       unsigned int to_swap = rand() % arr.len;
@@ -45,6 +46,8 @@ Arr generate_candidate_set(Config* config, void* target) {
         printf(".");
         fflush(stdout);
         arr_free(&arr);
+        munmap(config->candidate_pools[target_idx], config->num_candidates * config->page_size);
+        config->candidate_pools[target_idx] = mmap(NULL, config->num_candidates * config->page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
       }
     }
   } while(target && !evicted);

