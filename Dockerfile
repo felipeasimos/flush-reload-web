@@ -10,7 +10,6 @@ RUN ["make", "setup-gpg"]
 ENV GPGHOMEDIR /app/gpg/gpgtesthomedir
 ENV GPG "/app/gpg/gnupg-1.4.13/g10/gpg -r testdev --homedir ${GPGHOMEDIR}"
 ADD ./gpg/ /app/gpg/
-ARG anchor cached
 ENV TARGET_FILE /app/gpg/hello.txt.gpg
 ADD . /app
 WORKDIR /app
