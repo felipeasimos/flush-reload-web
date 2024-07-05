@@ -10,7 +10,7 @@ RUN ["make", "setup-gpg"]
 ENV GPGHOMEDIR /app/gpg/gpgtesthomedir
 ENV GPG "/app/gpg/gnupg-1.4.13/g10/gpg -r testdev --homedir ${GPGHOMEDIR}"
 ADD ./gpg/ /app/gpg/
-RUN ["make", "create-key"]
+ARG anchor cached
 ENV TARGET_FILE /app/gpg/hello.txt.gpg
 ADD . /app
 WORKDIR /app
@@ -18,4 +18,4 @@ WORKDIR /app
 EXPOSE 8000
 # CMD bash -c "make attack build-bento parse compare; bash"
 # CMD bash
-CMD bash -c "make serve"
+CMD bash -c "make create-key serve"
