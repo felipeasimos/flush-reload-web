@@ -1,9 +1,9 @@
 .PHONY: build-docker run-docker-web run-docker-native plot build-bento build-plunger build-reducer
 build-docker:
 	docker build -t fr .
-run-docker-native: build-docker
+run-docker-native:
 	docker run -it --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make create-key attack build-bento parse compare"
-run-docker-web-attack: build-docker
+run-docker-web-attack:
 	docker run -it --rm -p 8000:8000 -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make create-key attack-web"
 run-docker-web-serve: build-docker
 	docker run -it -p 8000:8000 --rm -v $$(pwd)/data:/app/data --name "fr" fr bash -c "make create-key serve"

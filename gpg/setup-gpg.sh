@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # download gpg
-wget ftp://ftp.gnupg.org/gcrypt/gnupg/gnupg-1.4.13.tar.bz2
+wget https://www.gnupg.org/ftp/gcrypt/gnupg/gnupg-1.4.13.tar.bz2
 # decompress it
 tar -xvf gnupg-1.4.13.tar.bz2
 cd gnupg-1.4.13
