@@ -8,3 +8,4 @@ gpg/**/
 **/*env/
 **/*env
 **/report.plot
+**.plot
