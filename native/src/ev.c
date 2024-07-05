@@ -14,6 +14,7 @@ Arr generate_candidate_set(Config* config, unsigned int target_idx) {
   unsigned int page_offset = ((unsigned long)(target) & (config->page_size-1));
   uint8_t evicted = 0;
   Arr arr;
+  unsigned int num_measurements = config->num_measurements * 10;
   do {
     arr = arr_init(config->num_candidates);
     // populate array of candidate indices
@@ -31,7 +32,7 @@ Arr generate_candidate_set(Config* config, unsigned int target_idx) {
       unsigned int t = 0;
       unsigned int hit = 0;
       unsigned int miss = 0;
-      for(unsigned int i = 0; i < config->num_measurements; i++) {
+      for(unsigned int i = 0; i < num_measurements; i++) {
         const unsigned int a = timed_miss(arr.arr[0], target);
         if(a < config->threshold) {
           hit++;
@@ -40,8 +41,8 @@ Arr generate_candidate_set(Config* config, unsigned int target_idx) {
         }
         t += a;
       }
-      const unsigned int miss_ratio = (float)miss / config->num_measurements;
-      evicted = config->threshold < (t / config->num_measurements) && miss_ratio >= config->minimal_miss_ratio;
+      const unsigned int miss_ratio = (float)miss / num_measurements;
+      evicted = config->threshold < (t / num_measurements) && miss_ratio >= config->minimal_miss_ratio;
       if(!evicted) {
         printf(".");
         fflush(stdout);
