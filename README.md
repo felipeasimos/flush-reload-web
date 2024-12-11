@@ -1,5 +1,7 @@
 # Flush Reload on the Web
 
+* Implementation of my [graduation thesis paper](http://dx.doi.org/10.1109/MetroInd4.0IoT54413.2022.9831668)
+
 ## TODO
 
 * evsets in C for native
