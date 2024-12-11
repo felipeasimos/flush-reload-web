@@ -1,6 +1,6 @@
 # Flush Reload on the Web
 
-* Implementation of my [graduation thesis paper](http://dx.doi.org/10.1109/MetroInd4.0IoT54413.2022.9831668)
+* Implementation of my [graduation thesis paper](https://app.uff.br/riuff/handle/1/34944)
 
 ## TODO
 
